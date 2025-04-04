@@ -1,0 +1,89 @@
+<div class="dashboard-container">
+    <mat-card class="dashboard-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="dashboard-icon">dashboard</mat-icon>
+          Kubernetes Pod Dashboard
+        </mat-card-title>
+      </mat-card-header>
+  
+      <!-- Status Cards -->
+      <div class="status-summary">
+        <mat-card class="summary-card running">
+          <div class="card-content">
+            <mat-icon>check_circle</mat-icon>
+            <div class="card-text">
+              <div class="count">{{runningPodsCount}}</div>
+              <div class="label">Running</div>
+            </div>
+          </div>
+        </mat-card>
+  
+        <mat-card class="summary-card pending">
+          <div class="card-content">
+            <mat-icon>schedule</mat-icon>
+            <div class="card-text">
+              <div class="count">{{pendingPodsCount}}</div>
+              <div class="label">Pending</div>
+            </div>
+          </div>
+        </mat-card>
+  
+        <mat-card class="summary-card failed">
+          <div class="card-content">
+            <mat-icon>error</mat-icon>
+            <div class="card-text">
+              <div class="count">{{failedPodsCount}}</div>
+              <div class="label">Failed</div>
+            </div>
+          </div>
+        </mat-card>
+      </div>
+  
+      <!-- Controls -->
+      <div class="controls-row">
+        <mat-form-field class="namespace-filter">
+          <mat-label>Namespace</mat-label>
+          <mat-select [formControl]="namespaceControl">
+            <mat-option *ngFor="let ns of namespaces" [value]="ns">
+              {{ns}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+  
+        <button mat-raised-button 
+                color="primary" 
+                (click)="toggleAutoRefresh()"
+                [disabled]="loading">
+          <mat-icon>{{autoRefreshEnabled ? 'pause' : 'play_arrow'}}</mat-icon>
+          {{autoRefreshEnabled ? 'Pause Auto-Refresh' : 'Enable Auto-Refresh'}}
+        </button>
+  
+        <button mat-raised-button 
+                (click)="manualRefresh()"
+                [disabled]="loading">
+          <mat-icon>refresh</mat-icon>
+          Refresh Now
+        </button>
+      </div>
+  
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading pod data...</p>
+      </div>
+  
+      <!-- Pod List -->
+      <app-pod-list 
+  *ngIf="!loading && filteredPods.length"
+  [pods]="filteredPods"
+  [loading]="loading">
+</app-pod-list>
+
+  
+      <div *ngIf="!loading && filteredPods.length === 0" class="no-pods">
+        <mat-icon>info</mat-icon>
+        <p>No pods found in selected namespace</p>
+      </div>
+    </mat-card>
+  </div>

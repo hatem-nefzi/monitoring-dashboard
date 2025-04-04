@@ -1,0 +1,111 @@
+.dashboard-container {
+    padding: 16px;
+    
+    .dashboard-card {
+      padding: 24px;
+      border-radius: 8px;
+      
+      .dashboard-icon {
+        margin-right: 8px;
+        color: #3f51b5;
+        vertical-align: middle;
+      }
+    }
+  }
+  
+  .status-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  
+    .summary-card {
+      padding: 16px;
+      border-radius: 8px;
+      
+      .card-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        
+        mat-icon {
+          font-size: 32px;
+          width: 32px;
+          height: 32px;
+        }
+        
+        .card-text {
+          .count {
+            font-size: 24px;
+            font-weight: 500;
+            line-height: 1;
+          }
+          
+          .label {
+            font-size: 14px;
+            color: rgba(0, 0, 0, 0.6);
+          }
+        }
+      }
+      
+      &.running {
+        background: #e8f5e9;
+        mat-icon { color: #2e7d32; }
+        .count { color: #2e7d32; }
+      }
+      
+      &.pending {
+        background: #fff3e0;
+        mat-icon { color: #ef6c00; }
+        .count { color: #ef6c00; }
+      }
+      
+      &.failed {
+        background: #ffebee;
+        mat-icon { color: #c62828; }
+        .count { color: #c62828; }
+      }
+    }
+  }
+  
+  .controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+    align-items: center;
+    
+    .namespace-filter {
+      min-width: 200px;
+      flex-grow: 1;
+    }
+    
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+      
+      &[disabled] {
+        opacity: 0.7;
+      }
+    }
+  }
+  
+  .loading-state, .no-pods {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 0;
+    color: #666;
+    
+    mat-spinner, mat-icon {
+      margin-bottom: 16px;
+      
+    }
+    
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+    }
+  }

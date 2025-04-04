@@ -31,4 +31,8 @@ export class KubernetesService {
   getPipelineStatus(): Observable<KubernetesResponse<PipelineStatus[]>> {
     return this.http.get<KubernetesResponse<PipelineStatus[]>>(`${this.apiUrl}/pipelines`);
   }
+  // Add to your KubernetesService
+getNamespaces(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/namespaces`);
+  }
 }
