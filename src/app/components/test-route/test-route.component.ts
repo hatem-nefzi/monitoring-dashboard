@@ -1,33 +1,49 @@
 // src/app/test-route/test-route.component.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
 import { KubernetesService } from '../../services/kubernetes.service';
-import { RouterModule } from '@angular/router';
+import { PodListComponent } from '../../components/pod-list/pod-list.component';
 
 @Component({
   selector: 'app-test-route',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule, PodListComponent],
   template: `
-    <h2>Pod Data Test</h2>
-    <button (click)="fetchPods()">Fetch Pods</button>
-    
-    <div *ngIf="loading">Loading...</div>
-    
-    <div *ngIf="error" class="error">
-      Error: {{ error }}
+    <div class="test-container">
+      <h2>Kubernetes Pods Dashboard</h2>
+      <button (click)="fetchPods()">Refresh Pod Data</button>
+      
+      <app-pod-list 
+        [pods]="pods" 
+        [loading]="loading">
+      </app-pod-list>
+      
+      <div *ngIf="error" class="error-message">
+        {{ error }}
+      </div>
     </div>
-    
-    <pre *ngIf="podsData">{{ podsData | json }}</pre>
   `,
   styles: [`
-    .error { color: red; }
-    pre { background: #f5f5f5; padding: 10px; }
+    .test-container {
+      padding: 20px;
+    }
+    button {
+      margin-bottom: 20px;
+      padding: 10px 15px;
+      background: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .error-message {
+      color: #f44336;
+      margin-top: 20px;
+    }
   `]
 })
 export class TestRouteComponent {
-  podsData: any;
+  pods: any[] = [];
   loading = false;
   error: string | null = null;
 
@@ -39,13 +55,12 @@ export class TestRouteComponent {
     
     this.k8sService.getPods().subscribe({
       next: (response) => {
-        this.podsData = response;
+        this.pods = response.pods || [];
         this.loading = false;
       },
       error: (err) => {
         this.error = err.message;
         this.loading = false;
-        console.error('Error fetching pods:', err);
       }
     });
   }

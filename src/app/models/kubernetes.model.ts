@@ -40,6 +40,7 @@ export interface PipelineStatus {
 }
 
 export interface KubernetesResponse<T> {
+  pods: never[];
   success: boolean;
   data?: T;
   error?: string;

@@ -1,64 +1,22 @@
+<!-- src/app/pages/dashboard/dashboard.component.html -->
 <div class="dashboard-container">
-    <div class="header">
-      <h1>Kubernetes Monitoring Dashboard</h1>
-      <button mat-raised-button color="primary" (click)="refreshAll()">
-        <mat-icon>refresh</mat-icon> Refresh All
-      </button>
-    </div>
+    <mat-card class="dashboard-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="dashboard-icon">dashboard</mat-icon>
+          Kubernetes Dashboard
+        </mat-card-title>
+      </mat-card-header>
   
-    <!-- Error Display -->
-    <div *ngIf="errors.pods || errors.deployments || errors.pipelines" class="error-section">
-      <mat-card *ngIf="errors.pods" class="error-card">
-        <mat-card-header>
-          <mat-card-title>Pod Error</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          {{ errors.pods }}
-        </mat-card-content>
-      </mat-card>
-      <!-- Similar error cards for deployments and pipelines -->
-    </div>
+      <mat-card-actions>
+        <button mat-raised-button color="primary" (click)="fetchPods()">
+          <mat-icon>refresh</mat-icon>
+          Refresh Pods
+        </button>
+      </mat-card-actions>
   
-    <!-- Metrics Summary -->
-    <div class="metrics-summary">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Cluster Summary</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="summary-grid">
-            <div class="summary-item">
-              <div class="summary-value">{{ pods.length }}</div>
-              <div class="summary-label">Pods</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-value">{{ deployments.length }}</div>
-              <div class="summary-label">Deployments</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-value">{{ pipelines.length }}</div>
-              <div class="summary-label">Pipelines</div>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  
-    <!-- Pods Section -->
-    <div class="section">
-      <h2>Pods</h2>
-      <app-pod-list [pods]="pods" [loading]="loading.pods"></app-pod-list>
-    </div>
-  
-    <!-- Deployments Section -->
-    <div class="section">
-      <h2>Deployments</h2>
-      <app-deployment-list [deployments]="deployments" [loading]="loading.deployments"></app-deployment-list>
-    </div>
-  
-    <!-- Pipelines Section -->
-    <div class="section">
-      <h2>CI/CD Pipelines</h2>
-      <app-pipeline-list [pipelines]="pipelines" [loading]="loading.pipelines"></app-pipeline-list>
-    </div>
+      <mat-card-content>
+        <app-pod-list [pods]="pods" [loading]="loading"></app-pod-list>
+      </mat-card-content>
+    </mat-card>
   </div>
