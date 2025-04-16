@@ -83,7 +83,7 @@ export class TestRouteComponent implements OnInit, OnDestroy {
     this.stopAutoRefresh();
     
     if (this.autoRefreshEnabled) {
-      this.refreshSubscription = timer(0, 15000).pipe(
+      this.refreshSubscription = timer(0, 30000).pipe(
         switchMap(() => {
           this.loading = true;
           return this.k8sService.getPods().pipe(
