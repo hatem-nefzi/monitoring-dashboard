@@ -1,0 +1,62 @@
+<h2 mat-dialog-title>
+  <mat-icon>search</mat-icon>
+  Details for {{data.podName}}
+</h2>
+
+<mat-dialog-content>
+  <div *ngIf="loading" class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading pod details...</p>
+  </div>
+
+  <mat-tab-group [(selectedIndex)]="activeTab" *ngIf="!loading">
+    <mat-tab label="Summary">
+      <div class="summary-section">
+        <h3>Basic Information</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Namespace:</span>
+            <span class="value">{{data.namespace}}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Status:</span>
+            <span class="value">{{podDetails?.status?.phase}}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Node:</span>
+            <span class="value">{{podDetails?.spec?.nodeName}}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">IP:</span>
+            <span class="value">{{podDetails?.status?.podIP}}</span>
+          </div>
+        </div>
+
+        <h3>Containers</h3>
+        <div class="containers-list">
+          <div *ngFor="let container of podDetails?.spec?.containers" class="container-item">
+            <mat-icon>settings_applications</mat-icon>
+            <span class="container-name">{{container.name}}</span>
+            <span class="container-image">{{container.image}}</span>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Full Details">
+      <div class="full-details">
+        <button mat-raised-button color="primary" 
+                [cdkCopyToClipboard]="getFormattedDetails()"
+                (click)="copyToClipboard(getFormattedDetails())">
+          <mat-icon>{{copied ? 'check' : 'content_copy'}}</mat-icon>
+          {{copied ? 'Copied!' : 'Copy to Clipboard'}}
+        </button>
+        <pre>{{getFormattedDetails()}}</pre>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Close</button>
+</mat-dialog-actions>

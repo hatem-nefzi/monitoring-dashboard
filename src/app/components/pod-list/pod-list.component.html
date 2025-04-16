@@ -1,124 +1,124 @@
 <!-- src/app/components/pod-list/pod-list.component.html -->
 <mat-card class="pod-card">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon class="header-icon">developer_board</mat-icon>
-        Kubernetes Pods
-      </mat-card-title>
-      <mat-card-subtitle>Current running pods in your cluster</mat-card-subtitle>
-    </mat-card-header>
-  
-    <mat-card-content>
-      <div *ngIf="loading" class="loading-spinner">
-        <mat-spinner diameter="50"></mat-spinner>
-        <p>Loading pod data...</p>
-      </div>
-  
-      <div *ngIf="!loading && pods.length === 0" class="no-pods">
-        <mat-icon>info</mat-icon>
-        <p>No pods found in the cluster</p>
-      </div>
-  
-      <table *ngIf="!loading && pods.length > 0" mat-table [dataSource]="pods" class="mat-elevation-z8">
-        <!-- Name Column -->
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Pod Name</th>
-          <td mat-cell *matCellDef="let pod">
-            <div class="pod-name">
-              <mat-icon class="pod-icon">memory</mat-icon>
-              <span>{{pod.name}}</span>
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon class="header-icon">developer_board</mat-icon>
+      Kubernetes Pods
+    </mat-card-title>
+    <mat-card-subtitle>Current running pods in your cluster</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div *ngIf="loading" class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading pod data...</p>
+    </div>
+
+    <div *ngIf="!loading && pods.length === 0" class="no-pods">
+      <mat-icon>info</mat-icon>
+      <p>No pods found in the cluster</p>
+    </div>
+
+    <table *ngIf="!loading && pods.length > 0" mat-table [dataSource]="pods" class="mat-elevation-z8">
+      <!-- Name Column -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Pod Name</th>
+        <td mat-cell *matCellDef="let pod">
+          <div class="pod-name">
+            <mat-icon class="pod-icon">memory</mat-icon>
+            <span>{{pod.name}}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Namespace Column -->
+      <ng-container matColumnDef="namespace">
+        <th mat-header-cell *matHeaderCellDef>Namespace</th>
+        <td mat-cell *matCellDef="let pod">
+          <mat-chip class="namespace-chip">
+            {{pod.namespace}}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let pod">
+          <mat-chip [color]="getStatusColor(pod.status)" selected>
+            <mat-icon class="status-icon">{{getStatusIcon(pod.status)}}</mat-icon>
+            {{pod.status}}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Node Column -->
+      <ng-container matColumnDef="node">
+        <th mat-header-cell *matHeaderCellDef>Node</th>
+        <td mat-cell *matCellDef="let pod">
+          <div class="node-info">
+            <mat-icon>dns</mat-icon>
+            <span>{{pod.nodeName}}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Containers Column -->
+      <ng-container matColumnDef="containers">
+        <th mat-header-cell *matHeaderCellDef>Containers</th>
+        <td mat-cell *matCellDef="let pod">
+          <div class="containers-list">
+            <div *ngFor="let container of pod.containers" class="container-item">
+              <mat-chip 
+                [color]="container.ready ? 'primary' : 'warn'" 
+                [matTooltip]="container.state"
+                selected>
+                <mat-icon class="container-icon">settings_applications</mat-icon>
+                {{container.name}}
+              </mat-chip>
             </div>
-          </td>
-        </ng-container>
-  
-        <!-- Namespace Column -->
-        <ng-container matColumnDef="namespace">
-          <th mat-header-cell *matHeaderCellDef>Namespace</th>
-          <td mat-cell *matCellDef="let pod">
-            <mat-chip class="namespace-chip">
-              {{pod.namespace}}
-            </mat-chip>
-          </td>
-        </ng-container>
-  
-        <!-- Status Column -->
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let pod">
-            <mat-chip [color]="getStatusColor(pod.status)" selected>
-              <mat-icon class="status-icon">{{getStatusIcon(pod.status)}}</mat-icon>
-              {{pod.status}}
-            </mat-chip>
-          </td>
-        </ng-container>
-  
-        <!-- Node Column -->
-        <ng-container matColumnDef="node">
-          <th mat-header-cell *matHeaderCellDef>Node</th>
-          <td mat-cell *matCellDef="let pod">
-            <div class="node-info">
-              <mat-icon>dns</mat-icon>
-              <span>{{pod.nodeName}}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Metrics Column -->
+      <ng-container matColumnDef="metrics">
+        <th mat-header-cell *matHeaderCellDef>Metrics</th>
+        <td mat-cell *matCellDef="let pod">
+          <div *ngIf="pod.metrics.cpu && pod.metrics.memory" class="metrics-display">
+            <div class="metric-item">
+              <mat-icon class="metric-icon">speed</mat-icon>
+              <span class="metric-value">{{pod.metrics.cpu}}</span>
+              <span class="metric-label">CPU</span>
             </div>
-          </td>
-        </ng-container>
-  
-        <!-- Containers Column -->
-        <ng-container matColumnDef="containers">
-          <th mat-header-cell *matHeaderCellDef>Containers</th>
-          <td mat-cell *matCellDef="let pod">
-            <div class="containers-list">
-              <div *ngFor="let container of pod.containers" class="container-item">
-                <mat-chip 
-                  [color]="container.ready ? 'primary' : 'warn'" 
-                  [matTooltip]="container.state"
-                  selected>
-                  <mat-icon class="container-icon">settings_applications</mat-icon>
-                  {{container.name}}
-                </mat-chip>
-              </div>
+            <div class="metric-item">
+              <mat-icon class="metric-icon">memory</mat-icon>
+              <span class="metric-value">{{pod.metrics.memory}}</span>
+              <span class="metric-label">Memory</span>
             </div>
-          </td>
-        </ng-container>
-  
-        <!-- Metrics Column -->
-        <ng-container matColumnDef="metrics">
-          <th mat-header-cell *matHeaderCellDef>Metrics</th>
-          <td mat-cell *matCellDef="let pod">
-            <div *ngIf="pod.metrics.cpu && pod.metrics.memory" class="metrics-display">
-              <div class="metric-item">
-                <mat-icon class="metric-icon">speed</mat-icon>
-                <span class="metric-value">{{pod.metrics.cpu}}</span>
-                <span class="metric-label">CPU</span>
-              </div>
-              <div class="metric-item">
-                <mat-icon class="metric-icon">memory</mat-icon>
-                <span class="metric-value">{{pod.metrics.memory}}</span>
-                <span class="metric-label">Memory</span>
-              </div>
-            </div>
-            <div *ngIf="pod.metrics.error" class="metrics-error">
-              <mat-icon>error</mat-icon>
-              <span>Metrics unavailable</span>
-            </div>
-          </td>
-        </ng-container>
-  
-        <!-- Actions Column -->
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let pod">
-            <button mat-icon-button color="primary" matTooltip="View logs">
-              <mat-icon>description</mat-icon>
-            </button>
-            <button mat-icon-button color="accent" matTooltip="Inspect pod">
-              <mat-icon>search</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-  
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-    </mat-card-content>
-  </mat-card>
+          </div>
+          <div *ngIf="pod.metrics.error" class="metrics-error">
+            <mat-icon>error</mat-icon>
+            <span>Metrics unavailable</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let pod">
+          <button mat-icon-button color="primary" matTooltip="View logs" (click)="viewPodLogs(pod)">
+            <mat-icon>description</mat-icon>
+          </button>
+          <button mat-icon-button color="accent" matTooltip="Inspect pod" (click)="inspectPod(pod)">
+            <mat-icon>search</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>

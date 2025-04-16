@@ -1,0 +1,45 @@
+<h2 mat-dialog-title>
+  <mat-icon>description</mat-icon>
+  Logs for {{data.podName}}
+</h2>
+
+<mat-dialog-content>
+  <div class="log-controls">
+    <mat-form-field *ngIf="containerNames.length > 1" appearance="fill">
+      <mat-label>Container</mat-label>
+      <mat-select [(ngModel)]="selectedContainer" (selectionChange)="onContainerChange()">
+        <mat-option *ngFor="let container of containerNames" [value]="container">
+          {{container}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Lines to show</mat-label>
+      <input matInput type="number" [(ngModel)]="tailLines" min="10" max="1000">
+    </mat-form-field>
+
+    <button mat-raised-button color="primary" (click)="loadLogs()">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading logs...</p>
+  </div>
+
+  <div *ngIf="error" class="error-state">
+    <mat-icon color="warn">error</mat-icon>
+    <span>{{error}}</span>
+  </div>
+
+  <div *ngIf="!loading && !error" class="log-content">
+    <pre>{{logs}}</pre>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Close</button>
+</mat-dialog-actions>

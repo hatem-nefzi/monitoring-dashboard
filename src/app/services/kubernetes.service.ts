@@ -35,4 +35,27 @@ export class KubernetesService {
 getNamespaces(): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/namespaces`);
   }
+
+  //methods for getting logs and details
+  getPodLogs(podName: string, namespace: string, containerName?: string, tailLines?: number): Observable<string> {
+    let url = `${this.apiUrl}/namespaces/${namespace}/pods/${podName}/logs`;
+    
+    // Add query parameters if provided
+    const params: any = {};
+    if (containerName) {
+      params.container = containerName;
+    }
+    if (tailLines) {
+      params.tailLines = tailLines.toString();
+    }
+    
+    return this.http.get(url, { 
+      params,
+      responseType: 'text'
+    });
+  }
+
+  getPodDetails(podName: string, namespace: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/namespaces/${namespace}/pods/${podName}`);
+  }
 }
