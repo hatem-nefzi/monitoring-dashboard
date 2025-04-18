@@ -81,36 +81,22 @@ pipeline {
         }
 
         stage('Deploy') {
-    steps {
-        container('kubectl') {
-            withCredentials([file(credentialsId: 'kubeconfig1', variable: 'KUBECONFIG_FILE')]) {
+            steps {
+            container('kubectl') {
+                withCredentials([file(credentialsId: 'kubeconfig1', variable: 'KUBECONFIG_FILE')]) {
                 sh '''
-                    # Ensure KUBECONFIG file exists
-                    if [ ! -f "$KUBECONFIG_FILE" ]; then
-                        echo "ERROR: Kubeconfig file not found at $KUBECONFIG_FILE"
-                        exit 1
-                    fi
-
-                    echo "Using KUBECONFIG at: $KUBECONFIG_FILE"
-
-                    # Update deployment image
+                    # Force new deployment
                     kubectl --kubeconfig=$KUBECONFIG_FILE \
-                        set image deployment/monitoring-dashboard \
-                        monitoring-dashboard=$DOCKER_IMAGE
+                    patch deployment monitoring-dashboard \
+                    -p '{"spec":{"template":{"metadata":{"annotations":{"date":"'$(date +%s)'"}}}}'
                     
-                    # Wait for rollout to complete
                     kubectl --kubeconfig=$KUBECONFIG_FILE \
-                        rollout status deployment/monitoring-dashboard --timeout=300s
-                    
-                    # Verify pods are ready
-                    kubectl --kubeconfig=$KUBECONFIG_FILE \
-                        wait --for=condition=ready pod \
-                        -l app=monitoring-dashboard --timeout=120s
+                    rollout status deployment/monitoring-dashboard --timeout=300s
                 '''
+                }
+            }
             }
         }
-    }
-}
         }
         
         post {
