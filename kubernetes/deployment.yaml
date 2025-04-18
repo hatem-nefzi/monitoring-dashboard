@@ -16,6 +16,7 @@ spec:
     spec:
       containers:
         - name: monitoring-dashboard
+          imagePullPolicy: Always
           image: hatemnefzi/monitoring-ui:latest
           ports:
             - containerPort: 8080
