@@ -60,7 +60,7 @@ pipeline {
         
         stage('Docker Build') {
             steps {
-                container('docker') {
+                container('maven') {
                     script {
                         // Create builder instance
                         sh 'docker buildx create --use --name jenkins-builder'
@@ -80,7 +80,7 @@ pipeline {
         
         stage('Docker Push') {
             steps {
-                container('docker') {
+                container('maven') {
                     withDockerRegistry([credentialsId: 'docker-hub-credentials', url: 'https://index.docker.io/v1/']) {
                         sh """
                             docker push ${DOCKER_IMAGE}
