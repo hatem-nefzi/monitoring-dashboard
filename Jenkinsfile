@@ -96,7 +96,7 @@ pipeline {
                     withCredentials([file(credentialsId: 'kubeconfig1', variable: 'KUBECONFIG_FILE')]) {
                         script {
                             // Update deployment with new image
-                            sh """
+                            sh '''
                                 kubectl --kubeconfig=${KUBECONFIG_FILE} \
                                     set image deployment/${KUBE_DEPLOYMENT} \
                                     monitoring-dashboard=${DOCKER_IMAGE} \
@@ -110,7 +110,7 @@ pipeline {
                                 # Verify pods
                                 kubectl --kubeconfig=${KUBECONFIG_FILE} \
                                     get pods -l app=${KUBE_DEPLOYMENT}
-                            """
+                            '''
                         }
                     }
                 }
