@@ -95,8 +95,8 @@ pipeline {
 
                     # Update deployment image
                     kubectl --kubeconfig=$KUBECONFIG_FILE \
-                        set image deployment/monitoting-dashboard \
-                        monitoting-ui=$DOCKER_IMAGE
+                        set image deployment/monitoring-dashboard \
+                        monitoting-dashboard=$DOCKER_IMAGE
                     
                     # Wait for rollout to complete
                     kubectl --kubeconfig=$KUBECONFIG_FILE \
