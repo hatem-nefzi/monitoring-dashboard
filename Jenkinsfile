@@ -15,15 +15,19 @@ pipeline {
                     image: docker:dind
                     securityContext:
                       privileged: true
+                  - name: kubectl
+                    image: bitnami/kubectl:latest
+                    command: ["cat"]
+                    tty: true
                 '''
         }
     }
     environment {
-        
-        DOCKER_IMAGE  = "hatemnefzi/monitoring-ui:latest"
+        // Use build number for unique image tags
+        DOCKER_IMAGE = "hatemnefzi/monitoring-ui:${env.BUILD_NUMBER}"
+        KUBE_DEPLOYMENT = "monitoring-dashboard"
     }
     stages {
-        // Stages will go here
         stage('Checkout') {
             steps {
                 checkout([
@@ -37,6 +41,7 @@ pipeline {
                 ])
             }
         }
+        
         stage('Install Dependencies') {
             steps {
                 container('node') {
@@ -44,6 +49,7 @@ pipeline {
                 }
             }
         }
+        
         stage('Build') {
             steps {
                 container('node') {
@@ -51,64 +57,75 @@ pipeline {
                 }
             }
         }
+        
         stage('Docker Build') {
             steps {
-                container('maven') {
-                    sh '''
-                        docker buildx create --use
-                        docker buildx build --pull --no-cache -t $DOCKER_IMAGE --load .
-                        docker buildx prune -af
-                    '''
-                }
-            }
-        }
-        stage('Docker Push') {
-            steps {
-                container('maven') {
-                    withDockerRegistry([credentialsId: 'docker-hub-credentials', url: 'https://index.docker.io/v1/']) {
-                        sh '''
-                            echo "PATH: $PATH"
-                            echo "Docker version:"
-                            docker --version
-                            echo "Docker images:"
-                            docker images
-                            echo "Pushing Docker image: $DOCKER_IMAGE"
-                            docker push $DOCKER_IMAGE
-                        '''
+                container('docker') {
+                    script {
+                        // Create builder instance
+                        sh 'docker buildx create --use --name jenkins-builder'
+                        // Build with cache
+                        sh """
+                            docker buildx build \
+                            --platform linux/amd64 \
+                            -t ${DOCKER_IMAGE} \
+                            --load .
+                        """
+                        // Cleanup
+                        sh 'docker buildx rm jenkins-builder'
                     }
                 }
             }
         }
-
-        stage('Deploy') {
+        
+        stage('Docker Push') {
             steps {
-            container('kubectl') {
-                withCredentials([file(credentialsId: 'kubeconfig1', variable: 'KUBECONFIG_FILE')]) {
-                sh '''
-                    # Force new deployment
-                    kubectl --kubeconfig=$KUBECONFIG_FILE \
-                    patch deployment monitoring-dashboard \
-                    -p '{"spec":{"template":{"metadata":{"annotations":{"date":"'$(date +%s)'"}}}}'
-                    
-                    kubectl --kubeconfig=$KUBECONFIG_FILE \
-                    rollout status deployment/monitoring-dashboard --timeout=300s
-                '''
+                container('docker') {
+                    withDockerRegistry([credentialsId: 'docker-hub-credentials', url: 'https://index.docker.io/v1/']) {
+                        sh """
+                            docker push ${DOCKER_IMAGE}
+                        """
+                    }
                 }
             }
-            }
-        }
         }
         
-        post {
+        stage('Deploy') {
+            steps {
+                container('kubectl') {
+                    withCredentials([file(credentialsId: 'kubeconfig1', variable: 'KUBECONFIG_FILE')]) {
+                        script {
+                            // Update deployment with new image
+                            sh """
+                                kubectl --kubeconfig=${KUBE_CONFIG_FILE} \
+                                    set image deployment/${KUBE_DEPLOYMENT} \
+                                    monitoring-dashboard=${DOCKER_IMAGE} \
+                                    --record
+                                
+                                # Wait for rollout
+                                kubectl --kubeconfig=${KUBE_CONFIG_FILE} \
+                                    rollout status deployment/${KUBE_DEPLOYMENT} \
+                                    --timeout=300s
+                                
+                                # Verify pods
+                                kubectl --kubeconfig=${KUBE_CONFIG_FILE} \
+                                    get pods -l app=${KUBE_DEPLOYMENT}
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+    post {
         always {
-            
             cleanWs()
         }
         success {
-            echo 'Pipeline completed successfully!'
+            echo "Successfully deployed ${DOCKER_IMAGE}"
         }
         failure {
-            echo 'Pipeline failed!'
-        }
+            echo "Pipeline failed - check logs for details"
         }
     }
+}
