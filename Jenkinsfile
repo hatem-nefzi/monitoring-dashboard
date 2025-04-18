@@ -115,7 +115,7 @@ pipeline {
         
         post {
         always {
-            container('docker') {
+            container('maven') {
             sh 'docker logout'
             }
             cleanWs()
