@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: monitoting-dashboard
+  name: monitoring-dashboard
   labels:
     app: monitoring-dashboard
 spec:

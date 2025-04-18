@@ -96,16 +96,16 @@ pipeline {
                     # Update deployment image
                     kubectl --kubeconfig=$KUBECONFIG_FILE \
                         set image deployment/monitoring-dashboard \
-                        monitoting-dashboard=$DOCKER_IMAGE
+                        monitoring-dashboard=$DOCKER_IMAGE
                     
                     # Wait for rollout to complete
                     kubectl --kubeconfig=$KUBECONFIG_FILE \
-                        rollout status deployment/monitoting-dashboard --timeout=300s
+                        rollout status deployment/monitoring-dashboard --timeout=300s
                     
                     # Verify pods are ready
                     kubectl --kubeconfig=$KUBECONFIG_FILE \
                         wait --for=condition=ready pod \
-                        -l app=monitoting-dashboard --timeout=120s
+                        -l app=monitoring-dashboard --timeout=120s
                 '''
             }
         }
