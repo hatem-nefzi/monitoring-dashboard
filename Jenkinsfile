@@ -97,18 +97,18 @@ pipeline {
                         script {
                             // Update deployment with new image
                             sh """
-                                kubectl --kubeconfig=${KUBE_CONFIG_FILE} \
+                                kubectl --kubeconfig=${KUBECONFIG_FILE} \
                                     set image deployment/${KUBE_DEPLOYMENT} \
                                     monitoring-dashboard=${DOCKER_IMAGE} \
                                     --record
                                 
                                 # Wait for rollout
-                                kubectl --kubeconfig=${KUBE_CONFIG_FILE} \
+                                kubectl --kubeconfig=${KUBECONFIG_FILE} \
                                     rollout status deployment/${KUBE_DEPLOYMENT} \
                                     --timeout=300s
                                 
                                 # Verify pods
-                                kubectl --kubeconfig=${KUBE_CONFIG_FILE} \
+                                kubectl --kubeconfig=${KUBECONFIG_FILE} \
                                     get pods -l app=${KUBE_DEPLOYMENT}
                             """
                         }
