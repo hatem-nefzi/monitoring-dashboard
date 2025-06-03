@@ -1,0 +1,39 @@
+/* src/components/resource-dashboard/resource-dashboard.component.scss */
+
+.controls {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+  
+    mat-form-field {
+      width: 200px;
+      margin-right: 16px;
+    }
+  
+    .spacer {
+      flex: 1;
+    }
+  }
+  
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    margin-top: 16px;
+  
+    table {
+      width: 100%;
+    }
+  }
+  
+  .mat-column-labels,
+  .mat-column-annotations {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }

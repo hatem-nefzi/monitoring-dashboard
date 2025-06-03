@@ -45,3 +45,33 @@ export interface KubernetesResponse<T> {
   data?: T;
   error?: string;
 }
+
+
+//added for ingress and services
+
+export interface ServiceInfo {
+  name: string;
+  namespace: string;
+  type: string;
+  clusterIP: string;
+  ports: ServicePort[];
+  labels: { [key: string]: string };
+  creationTimestamp?: string;
+}
+
+export interface ServicePort {
+  name?: string;
+  protocol: string;
+  port: number;
+  targetPort: number | string;
+  nodePort?: number;
+}
+
+export interface IngressInfo {
+  name: string;
+  namespace: string;
+  hosts: string[];
+  paths: string[];
+  annotations: { [key: string]: string };
+  creationTimestamp?: string;
+}

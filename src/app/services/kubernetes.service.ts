@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { HttpParams } from '@angular/common/http';
 import { 
   PodInfo, 
   DeploymentInfo,
   PipelineStatus,
   KubernetesResponse
+  
 } from '../models/kubernetes.model';
 
 @Injectable({
@@ -24,9 +26,7 @@ export class KubernetesService {
     return this.http.get<KubernetesResponse<string[]>>(`${this.apiUrl}/pod-names`);
   }
 
-  getDeployments(): Observable<KubernetesResponse<DeploymentInfo[]>> {
-    return this.http.get<KubernetesResponse<DeploymentInfo[]>>(`${this.apiUrl}/deployments`);
-  }
+  
 
   getPipelineStatus(): Observable<KubernetesResponse<PipelineStatus[]>> {
     return this.http.get<KubernetesResponse<PipelineStatus[]>>(`${this.apiUrl}/pipelines`);
@@ -57,5 +57,28 @@ getNamespaces(): Observable<string[]> {
 
   getPodDetails(podName: string, namespace: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/namespaces/${namespace}/pods/${podName}`);
+  }
+  //added for deployments and services and ingress
+  getDeployments(namespace?: string): Observable<any> {
+    let params = new HttpParams();
+    if (namespace) {
+      params = params.set('namespace', namespace);
+    }
+    return this.http.get(`${this.apiUrl}/deployments`, { params });
+  }
+  getServices(namespace?: string): Observable<any> {
+    let params = new HttpParams();
+    if (namespace) {
+      params = params.set('namespace', namespace);
+    }
+    return this.http.get(`${this.apiUrl}/services`, { params });
+  }
+  
+  getIngresses(namespace?: string): Observable<any> {
+    let params = new HttpParams();
+    if (namespace) {
+      params = params.set('namespace', namespace);
+    }
+    return this.http.get(`${this.apiUrl}/ingresses`, { params });
   }
 }
