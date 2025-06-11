@@ -2,18 +2,19 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
-import { 
-  PodInfo, 
+import {
+  PodInfo,
   DeploymentInfo,
   PipelineStatus,
   KubernetesResponse
-  
 } from '../models/kubernetes.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class KubernetesService {
+  // Changed from localhost:9090 to relative path
+  // This will route through the ingress to your backend
   private apiUrl = 'http://localhost:9090/api/kubernetes';
 
   constructor(private http: HttpClient) { }
@@ -26,17 +27,15 @@ export class KubernetesService {
     return this.http.get<KubernetesResponse<string[]>>(`${this.apiUrl}/pod-names`);
   }
 
-  
-
   getPipelineStatus(): Observable<KubernetesResponse<PipelineStatus[]>> {
     return this.http.get<KubernetesResponse<PipelineStatus[]>>(`${this.apiUrl}/pipelines`);
   }
-  // Add to your KubernetesService
-getNamespaces(): Observable<string[]> {
+
+  getNamespaces(): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/namespaces`);
   }
 
-  //methods for getting logs and details
+  // Methods for getting logs and details
   getPodLogs(podName: string, namespace: string, containerName?: string, tailLines?: number): Observable<string> {
     let url = `${this.apiUrl}/namespaces/${namespace}/pods/${podName}/logs`;
     
@@ -49,7 +48,7 @@ getNamespaces(): Observable<string[]> {
       params.tailLines = tailLines.toString();
     }
     
-    return this.http.get(url, { 
+    return this.http.get(url, {
       params,
       responseType: 'text'
     });
@@ -58,7 +57,8 @@ getNamespaces(): Observable<string[]> {
   getPodDetails(podName: string, namespace: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/namespaces/${namespace}/pods/${podName}`);
   }
-  //added for deployments and services and ingress
+
+  // Added for deployments and services and ingress
   getDeployments(namespace?: string): Observable<any> {
     let params = new HttpParams();
     if (namespace) {
@@ -66,6 +66,7 @@ getNamespaces(): Observable<string[]> {
     }
     return this.http.get(`${this.apiUrl}/deployments`, { params });
   }
+
   getServices(namespace?: string): Observable<any> {
     let params = new HttpParams();
     if (namespace) {
@@ -73,7 +74,7 @@ getNamespaces(): Observable<string[]> {
     }
     return this.http.get(`${this.apiUrl}/services`, { params });
   }
-  
+
   getIngresses(namespace?: string): Observable<any> {
     let params = new HttpParams();
     if (namespace) {

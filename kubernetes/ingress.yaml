@@ -3,24 +3,26 @@ kind: Ingress
 metadata:
   name: monitoring-dashboard-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /  # Rewrite all paths to root
-    nginx.ingress.kubernetes.io/app-root: /test-pods  # Redirect root to /test-pods
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-    - host: monitoring.example.com
-      http:
-        paths:
-          - path: /test-pods
-            pathType: Exact
-            backend:
-              service:
-                name: monitoring-dashboard-service
-                port:
-                  number: 80
-          - path: /  # Catch-all for SPA routes
-            pathType: Prefix
-            backend:
-              service:
-                name: monitoring-dashboard-service
-                port:
-                  number: 80
+  - host: monitoring.example.com
+    http:
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+              name: monitoring-backend-service
+              port:
+                number: 9090
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: monitoring-dashboard-service
+              port:
+                number: 80
