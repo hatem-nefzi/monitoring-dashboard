@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-frontend
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: monitoring-frontend
+          resources:
+            requests:
+              memory: "96Mi"
+              cpu: "70m"
+            limits:
+              memory: "192Mi"
+              cpu: "150m"

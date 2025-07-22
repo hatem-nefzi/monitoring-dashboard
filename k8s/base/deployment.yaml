@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-frontend
+  labels:
+    app: monitoring-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: monitoring-frontend
+  template:
+    metadata:
+      labels:
+        app: monitoring-frontend
+    spec:
+      securityContext:
+        runAsUser: 101 # nginx user
+        runAsGroup: 101
+        runAsNonRoot: true
+        fsGroup: 101
+      imagePullSecrets:
+        - name: gitlab-registry-secret
+      volumes:
+        - name: tmp-volume
+          emptyDir: {} # 🔒 Volume temporaire pour /tmp
+        - name: var-cache-nginx
+          emptyDir: {} # 🔒 Volume pour le cache nginx
+        - name: var-run
+          emptyDir: {} # 🔒 Volume pour les fichiers runtime nginx
+      containers:
+        - name: monitoring-frontend
+          image: monitoring-frontend:1.0.0 # Remplacé par kustomize
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp # 🔥 Permet à nginx d'écrire dans /tmp
+            - name: var-cache-nginx
+              mountPath: /var/cache/nginx # 🔥 Cache nginx
+            - name: var-run
+              mountPath: /var/run # 🔥 Fichiers runtime nginx
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+

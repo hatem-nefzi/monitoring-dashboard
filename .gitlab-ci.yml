@@ -35,6 +35,138 @@ variables:
     - npm config set cache $NPM_CONFIG_CACHE --global
     - node --version
     - npm --version
+.kubectl_job: &kubectl_definition
+  <<: *job_definition
+  image: alpine/k8s:1.25.10
+  variables:
+    KUBECONFIG: /tmp/kubeconfig/config
+
+# Template for production jobs
+.production_job: &production_job_definition
+  tags:
+    - production
+    - gitlab-runner-prod
+    - kubernetes
+    - minikube
+    - registry
+  variables:
+    TARGET_ENV: "production"
+    REGISTRY_URL: "$PRODUCTION_REGISTRY_URL"
+    KUBE_SERVER: "https://$PRODUCTION_VM_IP:6443"
+
+# Common deployment base
+.monitoring_frontend_deploy_base: &monitoring_frontend_deploy_base
+  <<: *job_definition
+  image: alpine/k8s:1.30.0
+  variables:
+    APP_NAME: "monitoring-frontend"
+    CONTAINER_PORT: 8080
+    SERVICE_PORT: 80
+    KUSTOMIZE_VERSION: "v5.4.3"
+  before_script:
+    - apk add --no-cache curl jq gettext
+    - echo "Installing Kustomize..."
+    - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+    - mv kustomize /usr/local/bin/
+    - kustomize version
+
+.monitoring_staging_deploy: &monitoring_staging_deploy
+  <<: *monitoring_frontend_deploy_base
+  variables:
+    ENVIRONMENT: staging
+    KUBECONFIG: "$CI_PROJECT_DIR/.kube/config"
+    MINIKUBE_IP: "192.168.49.2"
+    MINIKUBE_PORT: "8443"
+    KUBECTL_VERSION: "v1.32.3"
+  before_script:
+    - curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    - chmod +x kubectl && mv kubectl /usr/local/bin/
+    - mkdir -p "$(dirname "$KUBECONFIG")"
+    - |
+      echo "Creating kubeconfig with service account token..."
+      cat > "$KUBECONFIG" <<EOF
+      apiVersion: v1
+      clusters:
+      - cluster:
+          server: https://${MINIKUBE_IP}:${MINIKUBE_PORT}
+          insecure-skip-tls-verify: true
+        name: minikube
+      contexts:
+      - context:
+          cluster: minikube
+          user: gitlab-ci
+        name: minikube
+      current-context: minikube
+      kind: Config
+      preferences: {}
+      users:
+      - name: gitlab-ci
+        user:
+          token: ${MINIKUBE_TOKEN}
+      EOF
+    - echo "Testing Kubernetes connection..."
+    - kubectl cluster-info
+    - kubectl get nodes
+    - echo "✅ Kubernetes connection successful!"
+
+.monitoring_production_deploy: &monitoring_production_deploy
+  <<: *monitoring_frontend_deploy_base
+  variables:
+    ENVIRONMENT: production
+    KUBECONFIG: "${CI_PROJECT_DIR}/.kube/config"
+  before_script:
+    - mkdir -p "$(dirname "$KUBECONFIG")"
+    - |
+      cat > "${KUBECONFIG}" <<EOF
+      apiVersion: v1
+      clusters:
+      - cluster:
+          server: ${K3S_SERVER}
+          certificate-authority-data: ${K3S_CA_CERT}
+        name: k3s-cluster
+      contexts:
+      - context:
+          cluster: k3s-cluster
+          user: k3s-user
+        name: k3s-context
+      current-context: k3s-context
+      kind: Config
+      preferences: {}
+      users:
+      - name: k3s-user
+        user:
+          client-certificate-data: ${K3S_CLIENT_CERT}
+          client-key-data: ${K3S_CLIENT_KEY}
+      EOF
+    - kubectl config current-context
+    - kubectl cluster-info
+
+.monitoring_gke_deploy: &monitoring_gke_deploy
+  <<: *monitoring_frontend_deploy_base
+  image: google/cloud-sdk:slim
+  variables:
+    ENVIRONMENT: gke
+    KUBECONFIG: "${CI_PROJECT_DIR}/.kube/gke-config"
+    USE_GKE_GCLOUD_AUTH_PLUGIN: "True"
+    CLOUDSDK_CORE_PROJECT: "$GCP_PROJECT_ID"
+  before_script:
+    - apt-get update && apt-get install -y curl kubectl tar google-cloud-cli-gke-gcloud-auth-plugin
+    - echo "Installing Kustomize safely..."
+    - export KUSTOMIZE_VERSION=v5.4.3
+    - curl -Lo kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
+    - tar -zxvf kustomize.tar.gz
+    - chmod +x kustomize && mv kustomize /usr/local/bin/
+    - kustomize version
+    - echo "Setting up GCP authentication..."
+    - echo "$GCP_SERVICE_ACCOUNT_KEY" | base64 -d > /tmp/gcp-key.json
+    - gcloud auth activate-service-account --key-file /tmp/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+    - export CLOUDSDK_CORE_PROJECT=$GCP_PROJECT_ID
+    - gcloud services enable container.googleapis.com cloudresourcemanager.googleapis.com
+    - gcloud container clusters get-credentials $GKE_CLUSTER_NAME --zone $GKE_ZONE
+  after_script:
+    - rm -f /tmp/gcp-key.json
+
 
 
 
@@ -93,3 +225,22 @@ docker_publish:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"  # ou "main" si tu veux le faire sur main
 
+
+deploy-staging:
+  <<: *monitoring_staging_deploy
+  stage: deploy-staging
+  dependencies:
+    - docker
+  script:
+    - echo "Deploying monitoring-frontend to staging environment..."
+    - cd k8s/overlays/staging
+    - kustomize edit set image monitoring-frontend=$K8S_REGISTRY_IMAGE:$COMMIT_TAG
+    - kustomize build . | kubectl apply -f -
+    - kubectl wait --for=condition=available --timeout=300s deployment/monitoring-frontend -n $STAGING_NAMESPACE
+    - echo "✅ Staging deployment completed!"
+  environment:
+    name: staging
+    url: http://$STAGING_HOST
+  only:
+    - develop
+    - staging

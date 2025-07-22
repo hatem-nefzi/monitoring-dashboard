@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+commonLabels:
+  app.kubernetes.io/name: monitoring-frontend
+  app.kubernetes.io/component: frontend
+
+images:
+  - name: monitoring-frontend
+    newTag: "1.0.0" # This will be replaced by kustomize during the build process
