@@ -3,6 +3,14 @@ stages:
   - build
   - deploy
 
+variables:
+    # GitLab Container Registry variables
+  GITLAB_REGISTRY_URL: "$CI_REGISTRY"
+  GITLAB_REGISTRY_IMAGE: "$CI_REGISTRY_IMAGE"
+  GITLAB_REGISTRY_USER: "$CI_REGISTRY_USER"
+  GITLAB_REGISTRY_PASSWORD: "$CI_REGISTRY_PASSWORD"
+  
+
 
 # Job Templates
 .job_template: &job_definition
@@ -55,4 +63,30 @@ build:
       - dist/
       - node_modules/
     expire_in: 1 hour
+
+
+
+docker_publish:
+  <<: *job_definition
+  stage: docker
+  image: docker:24.0
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_BUILDKIT: 1
+  before_script:
+    - apk add --no-cache curl
+    - echo "Using GitLab Container Registry $CI_REGISTRY_IMAGE"
+    - echo "Commit SHA ${CI_COMMIT_SHORT_SHA}"
+  script:
+    - echo "=== BUILDING DOCKER IMAGE ==="
+    - docker build -t "$CI_REGISTRY_IMAGE:${CI_COMMIT_SHORT_SHA}" -t "$CI_REGISTRY_IMAGE:latest" .
+
+    - echo "=== LOGGING INTO GITLAB CONTAINER REGISTRY ==="
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+
+    - echo "=== PUSHING IMAGES ==="
+    - docker push "$CI_REGISTRY_IMAGE:${CI_COMMIT_SHORT_SHA}"
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"  # ou "main" si tu veux le faire sur main
 
