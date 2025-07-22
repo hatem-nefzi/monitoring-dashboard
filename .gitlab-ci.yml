@@ -1,3 +1,57 @@
 stages:
   - build
   - deploy
+
+
+# Job Templates
+.job_template: &job_definition
+  tags:
+    - docker
+  before_script:
+    - echo "starting job in ${CI_JOB_NAME} stage"
+
+.node_job: &node_definition
+  <<: *job_definition
+  image: node:18-alpine
+  cache:
+    key: npm-cache
+    paths:
+      - .npm/
+      - node_modules/
+  before_script:
+    - echo "Setting up Node.js environment..."
+    - npm config set cache $NPM_CONFIG_CACHE --global
+    - node --version
+    - npm --version
+
+
+
+# Jobs
+checkout:
+  <<: *job_definition
+  stage: checkout
+  before_script:
+    - echo "Cleaning previous build artifacts..."
+    - rm -rf dist/ node_modules/ .angular/
+  script:
+    - echo "Checking out code from ${CI_REPOSITORY_URL}"
+  artifacts:
+    paths:
+      - ./
+
+build:
+  <<: *node_definition
+  stage: build
+  script:
+    - echo "Installing dependencies..."
+    - npm ci
+    - echo "Building Angular application..."
+    - npm run build -- --configuration=production --output-path=dist
+    - echo "Build completed successfully!"
+    - ls -la dist/
+  artifacts:
+    paths:
+      - dist/
+      - node_modules/
+    expire_in: 1 hour
+
