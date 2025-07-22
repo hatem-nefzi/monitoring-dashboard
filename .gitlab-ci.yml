@@ -231,7 +231,7 @@ deploy-staging:
   <<: *monitoring_staging_deploy
   stage: deploy-staging
   dependencies:
-    - docker
+    - docker_publish
   script:
     - echo "Deploying monitoring-frontend to staging environment..."
     - cd k8s/overlays/staging
