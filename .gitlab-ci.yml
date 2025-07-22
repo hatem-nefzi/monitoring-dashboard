@@ -3,6 +3,7 @@ stages:
   - build
   - docker
   - deploy
+  - deploy-staging
 
 variables:
   #versioning
