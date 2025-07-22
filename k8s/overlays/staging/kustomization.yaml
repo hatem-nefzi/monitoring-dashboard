@@ -6,8 +6,24 @@ namePrefix: staging-
 resources:
   - ../../base
 
-patchesStrategicMerge:
-  - patch-deployment.yaml
+patches:
+  - target:
+      kind: Deployment
+      name: monitoring-frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: "96Mi"
+            cpu: "70m"
+          limits:
+            memory: "192Mi"
+            cpu: "150m"
+
 
 images:
   - name: registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui
