@@ -59,8 +59,6 @@ spec:
               mountPath: /var/cache/nginx # 🔥 Cache nginx
             - name: var-run
               mountPath: /var/run # 🔥 Fichiers runtime nginx
-            - name: nginx-config
-              mountPath: /etc/nginx/conf.d
           livenessProbe:
             httpGet:
               path: /
