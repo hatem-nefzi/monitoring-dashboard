@@ -1,10 +1,13 @@
 stages:
   - checkout
   - build
+  - docker
   - deploy
 
 variables:
-    # GitLab Container Registry variables
+  #versioning
+  COMMIT_TAG: "${CI_COMMIT_SHORT_SHA}"
+  # GitLab Container Registry variables
   GITLAB_REGISTRY_URL: "$CI_REGISTRY"
   GITLAB_REGISTRY_IMAGE: "$CI_REGISTRY_IMAGE"
   GITLAB_REGISTRY_USER: "$CI_REGISTRY_USER"
