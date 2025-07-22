@@ -1,4 +1,5 @@
 stages:
+  - checkout
   - build
   - deploy
 
