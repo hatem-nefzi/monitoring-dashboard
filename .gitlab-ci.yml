@@ -13,6 +13,7 @@ variables:
   GITLAB_REGISTRY_IMAGE: "$CI_REGISTRY_IMAGE"
   GITLAB_REGISTRY_USER: "$CI_REGISTRY_USER"
   GITLAB_REGISTRY_PASSWORD: "$CI_REGISTRY_PASSWORD"
+  STAGING_NAMESPACE: staging
   
 
 
@@ -224,7 +225,7 @@ docker_publish:
     - docker push "$CI_REGISTRY_IMAGE:${CI_COMMIT_SHORT_SHA}"
     - docker push "$CI_REGISTRY_IMAGE:latest"
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"  # ou "main" si tu veux le faire sur main
+    - if: $CI_COMMIT_BRANCH == "develop"  # ou "main" si tu veux le faire sur main.
 
 
 deploy-staging:
@@ -235,7 +236,7 @@ deploy-staging:
   script:
     - echo "Deploying monitoring-frontend to staging environment..."
     - cd k8s/overlays/staging
-    - kustomize edit set image monitoring-frontend=$K8S_REGISTRY_IMAGE:$COMMIT_TAG
+    - kustomize edit set image monitoring-frontend=$CI_REGISTRY_IMAGE:$COMMIT_TAG
     - kustomize build . | kubectl apply -f -
     - kubectl wait --for=condition=available --timeout=300s deployment/monitoring-frontend -n $STAGING_NAMESPACE
     - echo "✅ Staging deployment completed!"
