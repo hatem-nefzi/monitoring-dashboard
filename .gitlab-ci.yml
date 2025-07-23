@@ -228,48 +228,207 @@ docker_publish:
     - if: $CI_COMMIT_BRANCH == "develop"  # ou "main" si tu veux le faire sur main.
 
 
-deploy-staging:
-  <<: *monitoring_staging_deploy
-  stage: deploy-staging
-  dependencies:
-    - docker_publish
+
+deploy_frontend_production:
+  <<: *production_job_definition
+  stage: deploy-production
+  image: alpine/k8s:1.30.0
+  variables:
+    ENVIRONMENT: production
+    KUBECONFIG: "${CI_PROJECT_DIR}/.kube/config"
+  before_script:
+    - apk add --no-cache curl jq gettext bash
+    - mkdir -p "$(dirname "$KUBECONFIG")"
+    - |
+      cat > "${KUBECONFIG}" <<EOF
+      apiVersion: v1
+      clusters:
+      - cluster:
+          server: ${K3S_SERVER}
+          certificate-authority-data: ${K3S_CA_CERT}
+        name: k3s-cluster
+      contexts:
+      - context:
+          cluster: k3s-cluster
+          user: k3s-user
+        name: k3s-context
+      current-context: k3s-context
+      kind: Config
+      preferences: {}
+      users:
+      - name: k3s-user
+        user:
+          client-certificate-data: ${K3S_CLIENT_CERT}
+          client-key-data: ${K3S_CLIENT_KEY}
+      EOF
+    - echo "Testing connection to K3s cluster..."
+    - kubectl get nodes
+    - kubectl create namespace ${ENVIRONMENT} --dry-run=client -o yaml | kubectl apply -f -
+    # Create GitLab container registry secret
+    - |
+      kubectl delete secret gitlab-registry-secret -n ${ENVIRONMENT} --ignore-not-found=true
+      kubectl create secret docker-registry gitlab-registry-secret \
+        --docker-server=$GITLAB_REGISTRY_URL \
+        --docker-username=$GITLAB_REGISTRY_USER \
+        --docker-password=$GITLAB_REGISTRY_PASSWORD \
+        -n ${ENVIRONMENT} \
+        --dry-run=client -o yaml | kubectl apply -f -
+    # Install Kustomize
+    - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+    - mv kustomize /usr/local/bin/
+    - kustomize version
   script:
-    - echo "Deploying monitoring-frontend to staging environment..."
-    - cd k8s/overlays/staging
+    - echo "Building frontend production manifests with Kustomize..."
+    - cd k8s/overlays/production
+    - kustomize edit fix  # ensure compatibility
+    - |
+      echo "=== UPDATING FRONTEND IMAGE TAG FOR PRODUCTION ==="
+      echo "Setting image to: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+      kustomize edit set image monitoring-frontend=${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
     
-    # Debug: Show current kustomization before edit
-    - echo "=== BEFORE kustomize edit ==="
-    - cat kustomization.yaml | grep -A5 "images:"
+    - kustomize build . > ${CI_PROJECT_DIR}/k8s-frontend-production.yaml
+    - echo "Applying frontend manifests to production..."
+    - kubectl apply -f ${CI_PROJECT_DIR}/k8s-frontend-production.yaml
+    - echo "Waiting for frontend rollout to finish..."
+    - DEPLOYMENT_NAME=$(kubectl get deployment -n ${ENVIRONMENT} -l app=monitoring-frontend -o jsonpath='{.items[0].metadata.name}')
+    - kubectl rollout status deployment/$DEPLOYMENT_NAME -n ${ENVIRONMENT} --timeout=600s
+    - echo "=== FINAL FRONTEND STATUS ==="
+    - kubectl get all -n ${ENVIRONMENT} -l app=monitoring-frontend
+    - kubectl get ingress -n ${ENVIRONMENT} -l app=monitoring-frontend
+    - echo "Frontend deployment complete."
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "experiment" || $CI_COMMIT_BRANCH == "main"'
+  needs:
+    - job: frontend_staging_smoke_tests  # Adjust this to your actual frontend staging test job
+      optional: false
+  artifacts:
+    paths:
+      - k8s-frontend-production.yaml
+    expire_in: 1 week
+    when: always
+
+verify_frontend_deployment:
+  <<: *production_job_definition
+  stage: monitoring-verify
+  image: alpine/k8s:1.30.0
+  variables:
+    ENVIRONMENT: production
+    KUBECONFIG: "${CI_PROJECT_DIR}/.kube/config"
+    FRONTEND_URL: "http://monitoring-frontend.production.local"  # Adjust to your actual domain
     
-    # Update the image tag
-    - kustomize edit set image monitoring-frontend=$CI_REGISTRY_IMAGE:${CI_COMMIT_SHORT_SHA}
+  before_script:
+    - apk add --no-cache curl jq bash
+    - mkdir -p "$(dirname "$KUBECONFIG")"
+    - echo "${PRODUCTION_VM_IP} monitoring-frontend.production.local" >> /etc/hosts  # Adjust domain
+    # Setup kubeconfig (same as deploy job)
+    - |
+      cat > "${KUBECONFIG}" <<EOF
+      apiVersion: v1
+      clusters:
+      - cluster:
+          server: ${K3S_SERVER}
+          certificate-authority-data: ${K3S_CA_CERT}
+        name: k3s-cluster
+      contexts:
+      - context:
+          cluster: k3s-cluster
+          user: k3s-user
+        name: k3s-context
+      current-context: k3s-context
+      kind: Config
+      users:
+      - name: k3s-user
+        user:
+          client-certificate-data: ${K3S_CLIENT_CERT}
+          client-key-data: ${K3S_CLIENT_KEY}
+      EOF
+  
+  script:
+    - echo "=== VERIFYING FRONTEND DEPLOYMENT ==="
     
-    # Debug: Show kustomization after edit
-    - echo "=== AFTER kustomize edit ==="
-    - cat kustomization.yaml | grep -A5 "images:"
+    # Check if frontend pods are running
+    - |
+      echo "Checking frontend pod status..."
+      kubectl get pods -n ${ENVIRONMENT} -l app=monitoring-frontend
+      READY_PODS=$(kubectl get pods -n ${ENVIRONMENT} -l app=monitoring-frontend -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -c "True" || echo "0")
+      TOTAL_PODS=$(kubectl get pods -n ${ENVIRONMENT} -l app=monitoring-frontend --no-headers | wc -l)
+      echo "Ready pods: $READY_PODS/$TOTAL_PODS"
+      
+      if [ "$READY_PODS" -eq "0" ]; then
+        echo "❌ No frontend pods are ready"
+        kubectl describe pods -n ${ENVIRONMENT} -l app=monitoring-frontend
+        exit 1
+      else
+        echo "✅ Frontend pods are ready"
+      fi
     
-    # Debug: Show what will be applied
-    - echo "=== KUSTOMIZE BUILD OUTPUT ==="
-    - kustomize build . | grep -A5 -B5 "image:"
+    # Check service
+    - |
+      echo "Checking frontend service..."
+      kubectl get service -n ${ENVIRONMENT} monitoring-frontend-service
+      SERVICE_ENDPOINTS=$(kubectl get endpoints -n ${ENVIRONMENT} monitoring-frontend-service -o jsonpath='{.subsets[*].addresses[*].ip}' | wc -w)
+      echo "Service endpoints: $SERVICE_ENDPOINTS"
+      
+      if [ "$SERVICE_ENDPOINTS" -eq "0" ]; then
+        echo "❌ No service endpoints available"
+        exit 1
+      else
+        echo "✅ Service has endpoints"
+      fi
     
-    # Apply the configuration
-    - kustomize build . | kubectl apply -f -
+    # Check ingress
+    - |
+      echo "Checking frontend ingress..."
+      kubectl get ingress -n ${ENVIRONMENT} monitoring-frontend-ingress || echo "⚠️ Ingress not found"
     
-    # Force rolling update to ensure new image is pulled
-    - kubectl rollout restart deployment/monitoring-frontend -n $STAGING_NAMESPACE
+    # Test frontend health endpoint
+    - |
+      echo "Testing frontend health endpoint..."
+      sleep 10  # Give some time for services to be ready
+      
+      # Try internal service first
+      if kubectl exec -n ${ENVIRONMENT} deployment/monitoring-frontend -- wget -q -O- http://localhost:8080/health 2>/dev/null; then
+        echo "✅ Frontend health check (internal) successful"
+      else
+        echo "❌ Frontend health check (internal) failed"
+      fi
     
-    # Wait for deployment to complete
-    - kubectl wait --for=condition=available --timeout=300s deployment/monitoring-frontend -n $STAGING_NAMESPACE
+    # Test frontend main page
+    - |
+      echo "Testing frontend main page..."
+      if kubectl exec -n ${ENVIRONMENT} deployment/monitoring-frontend -- wget -q -O- http://localhost:8080/ 2>/dev/null | head -20; then
+        echo "✅ Frontend main page accessible"
+      else
+        echo "❌ Frontend main page not accessible"
+      fi
     
-    # Verify the image was updated
-    - echo "=== DEPLOYED IMAGE ==="
-    - kubectl get deployment monitoring-frontend -n $STAGING_NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].image}'
-    - echo ""
+    # Test external access (if ingress is configured)
+    - |
+      if curl -f -s --connect-timeout 10 "${FRONTEND_URL}/health" > /dev/null; then
+        echo "✅ Frontend externally accessible"
+        # Test if it can reach the backend API
+        if curl -f -s --connect-timeout 10 "${FRONTEND_URL}/api/health" > /dev/null; then
+          echo "✅ Frontend can proxy to backend API"
+        else
+          echo "⚠️ Frontend cannot reach backend API (this might be expected if backend is not ready)"
+        fi
+      else
+        echo "⚠️ Frontend not externally accessible (check ingress configuration)"
+      fi
     
-    - echo "✅ Staging deployment completed!"
-  environment:
-    name: staging
-    url: http://$STAGING_HOST
-  only:
-    - develop
+    # Check logs for any errors
+    - |
+      echo "Checking frontend logs for errors..."
+      kubectl logs -n ${ENVIRONMENT} -l app=monitoring-frontend --tail=50 --since=5m | grep -i error || echo "No errors found in recent logs"
     
+    - echo "=== FRONTEND VERIFICATION COMPLETE ==="
+    - echo "Frontend pods status:"
+    - kubectl get pods -n ${ENVIRONMENT} -l app=monitoring-frontend
+    - echo "Frontend service status:"
+    - kubectl get service -n ${ENVIRONMENT} monitoring-frontend-service
+  
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "experiment" || $CI_COMMIT_BRANCH == "main"'
+  needs:
+    - job: deploy_frontend_production
+      optional: false
