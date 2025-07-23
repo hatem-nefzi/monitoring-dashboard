@@ -7,6 +7,7 @@ namespace: staging
 resources:
   - ../../base
   - staging-ingress.yaml
+  - configmap-patch.yaml
 patches:
   - target:
       kind: Deployment
