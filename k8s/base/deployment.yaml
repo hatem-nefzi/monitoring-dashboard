@@ -30,7 +30,7 @@ spec:
           emptyDir: {} # 🔒 Volume pour les fichiers runtime nginx
       containers:
         - name: monitoring-frontend
-          image: registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui:latest  # Remplacé par kustomize
+          image: monitoring-frontend:latest  # Remplacé par kustomize
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

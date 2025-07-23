@@ -9,5 +9,6 @@ commonLabels:
   app.kubernetes.io/component: frontend
 
 images:
-  - name: registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui:latest # This will be replaced by kustomize during the build process
-    newTag: "1.0.0" # This will be replaced by kustomize during the build process
+  - name: monitoring-frontend
+    newName: registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui:latest # This will be replaced by kustomize during the build process
+    newTag: latest # This will be replaced by kustomize during the build process
