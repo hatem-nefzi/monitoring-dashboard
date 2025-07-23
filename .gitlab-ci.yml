@@ -5,6 +5,7 @@ stages:
   - deploy
   - deploy-staging
   - deploy-production
+  - monitoring-verify
 
 variables:
   #versioning
@@ -298,10 +299,8 @@ deploy_frontend_production:
     - kubectl get ingress -n ${ENVIRONMENT} -l app=monitoring-frontend
     - echo "Frontend deployment complete."
   rules:
-    - if: '$CI_COMMIT_BRANCH == "experiment" || $CI_COMMIT_BRANCH == "main"'
-  needs:
-    - job: frontend_staging_smoke_tests  # Adjust this to your actual frontend staging test job
-      optional: false
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+  
   artifacts:
     paths:
       - k8s-frontend-production.yaml
@@ -429,7 +428,7 @@ verify_frontend_deployment:
     - kubectl get service -n ${ENVIRONMENT} monitoring-frontend-service
   
   rules:
-    - if: '$CI_COMMIT_BRANCH == "experiment" || $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   needs:
     - job: deploy_frontend_production
       optional: false
