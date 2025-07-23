@@ -236,13 +236,40 @@ deploy-staging:
   script:
     - echo "Deploying monitoring-frontend to staging environment..."
     - cd k8s/overlays/staging
+    
+    # Debug: Show current kustomization before edit
+    - echo "=== BEFORE kustomize edit ==="
+    - cat kustomization.yaml | grep -A5 "images:"
+    
+    # Update the image tag
     - kustomize edit set image monitoring-frontend=$CI_REGISTRY_IMAGE:${CI_COMMIT_SHORT_SHA}
+    
+    # Debug: Show kustomization after edit
+    - echo "=== AFTER kustomize edit ==="
+    - cat kustomization.yaml | grep -A5 "images:"
+    
+    # Debug: Show what will be applied
+    - echo "=== KUSTOMIZE BUILD OUTPUT ==="
+    - kustomize build . | grep -A5 -B5 "image:"
+    
+    # Apply the configuration
     - kustomize build . | kubectl apply -f -
+    
+    # Force rolling update to ensure new image is pulled
+    - kubectl rollout restart deployment/monitoring-frontend -n $STAGING_NAMESPACE
+    
+    # Wait for deployment to complete
     - kubectl wait --for=condition=available --timeout=300s deployment/monitoring-frontend -n $STAGING_NAMESPACE
+    
+    # Verify the image was updated
+    - echo "=== DEPLOYED IMAGE ==="
+    - kubectl get deployment monitoring-frontend -n $STAGING_NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].image}'
+    - echo ""
+    
     - echo "✅ Staging deployment completed!"
   environment:
     name: staging
     url: http://$STAGING_HOST
   only:
     - develop
-    - staging
+    
