@@ -15,7 +15,7 @@ import {
 export class KubernetesService {
   // Changed from localhost:9090 to relative path
   // This will route through the ingress to your backend
-  private apiUrl = 'http://localhost:9090/api/kubernetes';
+  private apiUrl = '/api/kubernetes';
 
   constructor(private http: HttpClient) { }
 

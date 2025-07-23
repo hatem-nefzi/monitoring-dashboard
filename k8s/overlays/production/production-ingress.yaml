@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: monitoring-frontend-ingress
+  name: monitoring-ingress
   namespace: production
   annotations:
     kubernetes.io/ingress.class: "traefik"
@@ -12,6 +12,13 @@ spec:
   - host: monitoring-frontend.production.local
     http:
       paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: monitoring-backend-service
+            port:
+              number: 80
       - path: /
         pathType: Prefix
         backend:
@@ -19,4 +26,3 @@ spec:
             name: monitoring-frontend-service
             port:
               number: 8080
-  
