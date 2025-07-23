@@ -236,7 +236,7 @@ deploy-staging:
   script:
     - echo "Deploying monitoring-frontend to staging environment..."
     - cd k8s/overlays/staging
-    - kustomize edit set image monitoring-frontend=$CI_REGISTRY_IMAGE:$COMMIT_TAG
+    - kustomize edit set image monitoring-frontend=$CI_REGISTRY_IMAGE:${CI_COMMIT_SHORT_SHA}
     - kustomize build . | kubectl apply -f -
     - kubectl wait --for=condition=available --timeout=300s deployment/monitoring-frontend -n $STAGING_NAMESPACE
     - echo "✅ Staging deployment completed!"
