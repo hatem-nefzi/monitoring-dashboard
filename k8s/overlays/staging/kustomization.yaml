@@ -6,6 +6,7 @@ namespace: staging
 
 resources:
   - ../../base
+  - ../../staging/ingress.yaml
 
 patches:
   - target:
