@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
+import {MatInputModule} from '@angular/material/input';
 
 @Component({
   selector: 'app-pod-log-dialog',
@@ -20,7 +21,8 @@ import { FormsModule } from '@angular/forms';
     MatProgressSpinnerModule,
     MatSelectModule,
     MatFormFieldModule,
-    FormsModule
+    FormsModule,
+    MatInputModule
   ],
   templateUrl: './pod-log-dialog.component.html',
   styleUrls: ['./pod-log-dialog.component.scss']
