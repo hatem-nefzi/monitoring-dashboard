@@ -4,15 +4,11 @@ metadata:
   name: monitoring-frontend-ingress
   namespace: staging
   annotations:
-    kubernetes.io/ingress.class: "traefik"
-    traefik.ingress.kubernetes.io/router.entrypoints: web
-    # Frontend-specific annotations
-    traefik.ingress.kubernetes.io/custom-request-headers: "X-Forwarded-Prefix:/"
-    traefik.ingress.kubernetes.io/redirect-permanent: "true"
+    kubernetes.io/ingress.class: "nginx"
 spec:
-  ingressClassName: traefik
+  ingressClassName: nginx
   rules:
-  - host: "monitoring-frontend-staging.local"  # Different host than backend
+  - host: monitoring-frontend-staging.local
     http:
       paths:
       - path: /
@@ -21,4 +17,4 @@ spec:
           service:
             name: monitoring-frontend-service
             port:
-              number: 8080  # Matches your NodePort service
+              number: 8080  # Assure-toi que le service expose bien ce port
