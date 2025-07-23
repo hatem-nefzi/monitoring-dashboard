@@ -4,6 +4,7 @@ stages:
   - docker
   - deploy
   - deploy-staging
+  - deploy-production
 
 variables:
   #versioning
