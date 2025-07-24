@@ -494,7 +494,7 @@ deploy_monitoring_frontend_gke:
     - |
       if ! kubectl get managedcertificate monitoring-frontend-ssl-cert -n "$GKE_FRONTEND_NAMESPACE" > /dev/null 2>&1; then
         echo "Creating ManagedCertificate..."
-        kubectl apply -f monitoring-frontend/k8s/overlays/gke/managed-cert.yaml
+        kubectl apply -f k8s/overlays/gcp/managed-cert.yaml
       else
         echo "ManagedCertificate already exists. Skipping creation."
       fi
@@ -504,7 +504,7 @@ deploy_monitoring_frontend_gke:
     - |
       if ! kubectl get ingress monitoring-frontend-ingress -n "$GKE_FRONTEND_NAMESPACE" > /dev/null 2>&1; then
         echo "Creating Ingress..."
-        kubectl apply -f monitoring-frontend/k8s/ingress/gke-ingress.yaml
+        kubectl apply -f k8s/overlays/gcp/gcp-ingress.yaml
       else
         echo "Ingress already exists. Skipping creation."
       fi
