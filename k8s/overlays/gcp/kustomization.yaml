@@ -1,0 +1,30 @@
+# overlays/gcp/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring-frontend
+
+resources:
+  - ../../base
+  - gcp-ingress.yaml  # Optional: if you need GCP Load Balancer
+
+patchesStrategicMerge:
+  - patches/deployment-patch.yaml
+  - patches/configmap-patch.yaml  # Optional: if you have a ConfigMap patch
+  - managed-certificate.yaml  # Optional: for HTTPS
+
+images:
+  - name: monitoring-frontend
+    newName: registry.proxiad-axe-seine.com/proxiad-academie/monitoring-frontend  # Update with your actual registry
+    newTag: latest  # Replace with ${CI_COMMIT_SHORT_SHA} in GitLab CI
+
+commonLabels:
+  environment: gke
+  platform: gcp
+
+configMapGenerator:
+  - name: monitoring-frontend-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=gke
+      - PLATFORM=gcp

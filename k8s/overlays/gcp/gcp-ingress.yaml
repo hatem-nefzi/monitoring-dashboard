@@ -1,0 +1,21 @@
+# overlays/gcp/gcp-ingress.yaml (Optional - if you need external access)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitoring-frontend-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    
+    networking.gke.io/managed-certificates: "monitoring-frontend-ssl"
+spec:
+  rules:
+    - host: monitoring-dashboard.duckdns.org  # Replace with your domain
+      http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: monitoring-frontend-service
+                port:
+                  number: 8080

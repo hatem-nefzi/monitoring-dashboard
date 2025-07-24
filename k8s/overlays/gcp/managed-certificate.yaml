@@ -1,0 +1,8 @@
+# overlays/gcp/managed-certificate.yaml (Optional - for HTTPS)
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: monitoring-frontend-ssl
+spec:
+  domains:
+    - monitoring-dashboard.duckdns.org  # Replace with your domain

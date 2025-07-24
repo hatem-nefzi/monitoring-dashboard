@@ -16,6 +16,18 @@ variables:
   GITLAB_REGISTRY_USER: "$CI_REGISTRY_USER"
   GITLAB_REGISTRY_PASSWORD: "$CI_REGISTRY_PASSWORD"
   STAGING_NAMESPACE: staging
+
+   #GCP/GKE specific variables
+  GCP_PROJECT_ID: "decent-vertex-459014-k2"
+  GKE_CLUSTER_NAME: "my-pfe-cluster"
+  GKE_ZONE: "europe-west1-b"
+  GKE_NAMESPACE: "monitoring-frontend"
+  GKE_REPLICAS: 2
+  GKE_MEMORY_REQUEST: "256Mi"
+  GKE_MEMORY_LIMIT: "512Mi"
+  GKE_CPU_REQUEST: "100m"
+  GKE_CPU_LIMIT: "200m"
+
   
 
 
@@ -432,3 +444,74 @@ verify_frontend_deployment:
   needs:
     - job: deploy_frontend_production
       optional: false
+
+
+deploy_monitoring_frontend_gke:
+  <<: *monitoring_gke_deploy
+  stage: deploy-gke
+  script:
+    - echo "=== Context ==="
+    - echo "Project $GCP_PROJECT_ID"
+    - echo "Cluster $GKE_CLUSTER_NAME"
+    - echo "Zone $GKE_ZONE"
+    - echo "Namespace $GKE_FRONTEND_NAMESPACE"
+
+    # Create namespace if it doesn't exist
+    - echo "Creating namespace if it doesn't exist..."
+    - kubectl create namespace "$GKE_FRONTEND_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+    # Create GitLab registry secret for GKE
+    - echo "Creating GitLab Container Registry secret for GKE..."
+    - |
+      kubectl delete secret gitlab-registry-secret -n ${GKE_FRONTEND_NAMESPACE} --ignore-not-found=true
+      kubectl create secret docker-registry gitlab-registry-secret \
+        --docker-server=$CI_REGISTRY \
+        --docker-username=$CI_REGISTRY_USER \
+        --docker-password=$GITLAB_PERSONAL_TOKEN \
+        -n ${GKE_FRONTEND_NAMESPACE} \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+    # Patch image tag with commit SHA
+    - echo "Patching image with SHA $CI_COMMIT_SHORT_SHA"
+    - cd monitoring-frontend/k8s/overlays/gke
+    - kustomize edit set image monitoring-frontend=registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui:$CI_COMMIT_SHORT_SHA
+    - cd -
+
+    # Kustomize build and apply
+    - echo "Building Kustomize overlay for monitoring-frontend..."
+    - kustomize build monitoring-frontend/k8s/overlays/gke | tee monitoring-frontend-kustomize-output.yaml | kubectl apply -f -
+
+    # Ensure ManagedCertificate exists (optional, if needed)
+    - echo "Ensuring ManagedCertificate exists..."
+    - |
+      if ! kubectl get managedcertificate monitoring-frontend-ssl-cert -n "$GKE_FRONTEND_NAMESPACE" > /dev/null 2>&1; then
+        echo "Creating ManagedCertificate..."
+        kubectl apply -f monitoring-frontend/k8s/overlays/gke/managed-cert.yaml
+      else
+        echo "ManagedCertificate already exists. Skipping creation."
+      fi
+
+    # Ensure Ingress exists (optional)
+    - echo "Ensuring Ingress exists..."
+    - |
+      if ! kubectl get ingress monitoring-frontend-ingress -n "$GKE_FRONTEND_NAMESPACE" > /dev/null 2>&1; then
+        echo "Creating Ingress..."
+        kubectl apply -f monitoring-frontend/k8s/ingress/gke-ingress.yaml
+      else
+        echo "Ingress already exists. Skipping creation."
+      fi
+
+    # Wait for rollout to complete
+    - echo "Waiting for rollout to complete..."
+    - kubectl rollout status deployment/monitoring-frontend -n "$GKE_FRONTEND_NAMESPACE" --timeout=300s
+
+    # Debug
+    - echo "=== Resources ==="
+    - kubectl get all -n "$GKE_FRONTEND_NAMESPACE"
+    - echo "=== Describe pods ==="
+    - kubectl describe pods -l app=monitoring-frontend -n "$GKE_FRONTEND_NAMESPACE"
+    - echo "=== Logs (latest) ==="
+    - kubectl logs -l app=monitoring-frontend -n "$GKE_FRONTEND_NAMESPACE" --tail=100 --ignore-errors
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
