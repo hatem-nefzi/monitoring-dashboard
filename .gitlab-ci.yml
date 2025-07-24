@@ -5,6 +5,7 @@ stages:
   - deploy
   - deploy-staging
   - deploy-production
+  - deploy-gke
   - monitoring-verify
 
 variables:
