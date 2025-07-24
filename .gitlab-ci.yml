@@ -18,7 +18,7 @@ variables:
   GITLAB_REGISTRY_PASSWORD: "$CI_REGISTRY_PASSWORD"
   STAGING_NAMESPACE: staging
 
-   #GCP/GKE specific variables
+  #GCP/GKE specific variables
   GCP_PROJECT_ID: "decent-vertex-459014-k2"
   GKE_CLUSTER_NAME: "my-pfe-cluster"
   GKE_ZONE: "europe-west1-b"
@@ -450,6 +450,12 @@ verify_frontend_deployment:
 deploy_monitoring_frontend_gke:
   <<: *monitoring_gke_deploy
   stage: deploy-gke
+  variables:
+    GKE_FRONTEND_NAMESPACE: "monitoring-frontend"
+    ENVIRONMENT: gke
+    KUBECONFIG: "${CI_PROJECT_DIR}/.kube/gke-config"
+    USE_GKE_GCLOUD_AUTH_PLUGIN: "True"
+    CLOUDSDK_CORE_PROJECT: "$GCP_PROJECT_ID"
   script:
     - echo "=== Context ==="
     - echo "Project $GCP_PROJECT_ID"
