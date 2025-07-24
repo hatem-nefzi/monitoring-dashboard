@@ -7,11 +7,12 @@ namespace: monitoring-frontend
 resources:
   - ../../base
   - gcp-ingress.yaml  # Optional: if you need GCP Load Balancer
+  - managed-certificate.yaml  # Optional: for HTTPS
 
 patchesStrategicMerge:
   - patches/deployment-patch.yaml
   - patches/configmap-patch.yaml  # Optional: if you have a ConfigMap patch
-  - managed-certificate.yaml  # Optional: for HTTPS
+  
 
 images:
   - name: monitoring-frontend
