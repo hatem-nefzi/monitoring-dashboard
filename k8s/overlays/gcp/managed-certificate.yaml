@@ -1,8 +1,13 @@
-# overlays/gcp/managed-certificate.yaml (Optional - for HTTPS)
-apiVersion: networking.gke.io/v1
-kind: ManagedCertificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
 metadata:
-  name: monitoring-frontend-ssl
+  name: monitoring-frontend-cert
+  namespace: monitoring-frontend
 spec:
-  domains:
-    - monitoring-dashboard.duckdns.org  # Replace with your domain
+  secretName: monitoring-frontend-tls  # Nouveau secret TLS à générer
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: monitoring-dashboard.duckdns.org
+  dnsNames:
+    - monitoring-dashboard.duckdns.org

@@ -33,8 +33,9 @@ data:
 
         # Proxy API calls to backend ingress (HTTPS)
         location /api {
-            proxy_pass https://34.78.135.79;
+            proxy_pass https://monitoring-backend.duckdns.org;
             proxy_ssl_server_name on;
+            proxy_ssl_verify off;  # Disable SSL verification for self-signed certs
             proxy_set_header Host monitoring-backend.duckdns.org;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -42,6 +43,12 @@ data:
             proxy_connect_timeout 30s;
             proxy_send_timeout 30s;
             proxy_read_timeout 30s;
+            #error handling
+            error_page 502 503 504 /50x.html;
+        }
+        location = /50x.html {
+            root /usr/share/nginx/html;
+            internal;
         }
 
         location / {
