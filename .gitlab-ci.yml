@@ -479,8 +479,9 @@ deploy_monitoring_frontend_gke:
         --dry-run=client -o yaml | kubectl apply -f -
 
     # Patch image tag with commit SHA
+    - ls 
     - echo "Patching image with SHA $CI_COMMIT_SHORT_SHA"
-    - cd monitoring-frontend/k8s/overlays/gke
+    - cd monitoring-dashboard/k8s/overlays/gke
     - kustomize edit set image monitoring-frontend=registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui:$CI_COMMIT_SHORT_SHA
     - cd -
 
