@@ -481,13 +481,13 @@ deploy_monitoring_frontend_gke:
     # Patch image tag with commit SHA
     - ls 
     - echo "Patching image with SHA $CI_COMMIT_SHORT_SHA"
-    - cd monitoring-dashboard/k8s/overlays/gke
+    - cd k8s/overlays/gke
     - kustomize edit set image monitoring-frontend=registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui:$CI_COMMIT_SHORT_SHA
     - cd -
 
     # Kustomize build and apply
     - echo "Building Kustomize overlay for monitoring-frontend..."
-    - kustomize build monitoring-frontend/k8s/overlays/gke | tee monitoring-frontend-kustomize-output.yaml | kubectl apply -f -
+    - kustomize build k8s/overlays/gke | tee monitoring-frontend-kustomize-output.yaml | kubectl apply -f -
 
     # Ensure ManagedCertificate exists (optional, if needed)
     - echo "Ensuring ManagedCertificate exists..."
