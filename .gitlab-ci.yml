@@ -22,7 +22,7 @@ variables:
   GCP_PROJECT_ID: "decent-vertex-459014-k2"
   GKE_CLUSTER_NAME: "my-pfe-cluster"
   GKE_ZONE: "europe-west1-b"
-  GKE_NAMESPACE: "monitoring-frontend"
+  GKE_FRONTEND_NAMESPACE: "monitoring-frontend"
   GKE_REPLICAS: 2
   GKE_MEMORY_REQUEST: "256Mi"
   GKE_MEMORY_LIMIT: "512Mi"
