@@ -1,4 +1,3 @@
-# overlays/gcp/patches/deployment-patch.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,33 +11,33 @@ spec:
       maxUnavailable: 0
   template:
     spec:
-      # ADD THIS: Volume for nginx config
-      volumes:
-      - name: nginx-config
-        configMap:
-          name: monitoring-frontend-config
       containers:
-      - name: monitoring-frontend
-        env:
-        - name: ENVIRONMENT
-          value: "gke"
-        - name: PLATFORM
-          value: "gcp"
-        resources:
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-        # ADD THIS: Volume mount for nginx config
-        volumeMounts:
+        - name: monitoring-frontend
+          env:
+            - name: ENVIRONMENT
+              value: "gke"
+            - name: PLATFORM
+              value: "gcp"
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
         - name: nginx-config
-          mountPath: /etc/nginx/nginx.conf
-          subPath: nginx.conf
-      # Add spot instance tolerations if you want to use preemptible nodes
+          configMap:
+            name: monitoring-frontend-config
+            items:
+              - key: nginx.conf
+                path: nginx.conf
       tolerations:
-      - key: "cloud.google.com/gke-spot"
-        operator: "Equal"
-        value: "true"
-        effect: "NoSchedule"
+        - key: "cloud.google.com/gke-spot"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
