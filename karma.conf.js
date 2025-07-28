@@ -42,7 +42,7 @@ module.exports = function (config) {
         ]
       }
     },
-    browsers: ['ChromeHeadlessCI'], // 👈 Required for CI
+    browsers: ['ChromeHeadless'], // 👈 Required for CI
     singleRun: true,                // 👈 Exit after running tests once
     restartOnFileChange: false      // 👈 Disable file watching in CI
   });
