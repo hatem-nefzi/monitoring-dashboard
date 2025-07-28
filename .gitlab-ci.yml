@@ -274,6 +274,56 @@ build:
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_COMMIT_BRANCH == "main"'
 
+# === TEST JOBS ===
+
+unit_tests:
+  <<: *node_definition
+  stage: test
+  script:
+    - echo "Installing dependencies..."
+    - npm ci
+    - echo "Running unit tests..."
+    - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage --reporters=junit,coverage
+    - echo "✅ Unit tests completed"
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    paths:
+      - coverage/
+      - junit.xml
+    expire_in: 1 week
+    when: always
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+
+build_size_analysis:
+  <<: *node_definition
+  stage: test
+  needs: ["build"]
+  script:
+    - echo "Analyzing bundle sizes..."
+    - npm ci
+    - npx webpack-bundle-analyzer dist/stats.json dist/ --report --mode static --report-filename bundle-report.html || echo "Bundle analyzer not configured"
+    - echo "Checking bundle sizes..."
+    - find dist/ -name "*.js" -exec ls -lh {} \; | sort -k5 -hr
+    - echo "✅ Build analysis complete"
+  artifacts:
+    paths:
+      - bundle-report.html
+    expire_in: 1 week
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+
 
 
 docker_publish:
