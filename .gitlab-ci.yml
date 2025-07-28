@@ -48,7 +48,7 @@ variables:
 
 .node_job: &node_definition
   <<: *job_definition
-  image: node:18
+  image: node:18-alpine
   cache:
     key: npm-cache
     paths:
@@ -281,10 +281,10 @@ unit_tests:
   <<: *node_definition
   stage: test
   variables:
-    CHROME_BIN: "/usr/bin/chromium"
+    CHROME_BIN: "/usr/bin/chromium-browser"
   before_script:
     - echo "Installing dependencies..."
-    - apt-get update && apt-get install -y chromium
+    - apk update && apk add --no-cache chromium
   script:
     - echo "Installing dependencies..."
     - npm ci

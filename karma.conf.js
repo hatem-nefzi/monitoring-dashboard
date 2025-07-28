@@ -7,15 +7,15 @@ module.exports = function (config) {
       require('karma-chrome-launcher'),
       require('karma-coverage'),
       require('karma-jasmine-html-reporter'),
-      require('karma-junit-reporter'), // Make sure this is explicitly loaded
+      require('karma-junit-reporter'),
       require('@angular-devkit/build-angular/plugins/karma')
     ],
     client: {
-      clearContext: false // leave Jasmine Spec Runner output visible in browser
+      clearContext: false
     },
     reporters: ['progress', 'coverage', 'kjhtml', 'junit'],
     junitReporter: {
-      outputDir: './', // Output junit.xml to root directory
+      outputDir: './',
       outputFile: 'junit.xml',
       suite: 'unit-tests',
       useBrowserName: false
@@ -29,10 +29,8 @@ module.exports = function (config) {
         { type: 'cobertura' }
       ]
     },
-    browsers: ['ChromeHeadless'],
-    singleRun: false,
-    restartOnFileChange: true,
-    // Chrome headless configuration for CI
+
+    // ✅ Use custom ChromeHeadless launcher for CI
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
@@ -43,6 +41,9 @@ module.exports = function (config) {
           '--disable-dev-shm-usage'
         ]
       }
-    }
+    },
+    browsers: ['ChromeHeadlessCI'], // 👈 Required for CI
+    singleRun: true,                // 👈 Exit after running tests once
+    restartOnFileChange: false      // 👈 Disable file watching in CI
   });
 };
