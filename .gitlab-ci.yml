@@ -234,7 +234,7 @@ lint_code:
     - echo "Installing dependencies for linting..."
     - npm ci 
     - echo "Running ESLint..."
-    - npx eslint ./src --ext .ts, .js --format junit --output-file lint-results.xml || true  # Don't fail pipeline on lint errors
+    - npx eslint "./src" --ext .ts,.js --format junit --output-file lint-results.xml || true  # Don't fail pipeline on lint errors
     - echo "✅ Linting complete"
   artifacts:
     reports:
