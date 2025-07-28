@@ -213,6 +213,7 @@ validate_package_json:
   stage: validate
   script:
     - echo "Validating package.json..."
+    - apk add --no-cache jq
     - npm config list
     - cat package.json | jq empty  # Validate JSON syntax
     - echo "✅ package.json is valid"
