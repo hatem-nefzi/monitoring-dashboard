@@ -282,6 +282,7 @@ unit_tests:
   stage: test
   script:
     - echo "Installing dependencies..."
+    - rm -rf node_modules package-lock.json # 👈 force clean
     - npm ci
     - echo "Running unit tests..."
     - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage --reporters=junit,coverage
