@@ -1,5 +1,6 @@
 stages:
   - checkout
+  - validate
   - build
   - docker
   - deploy
@@ -28,6 +29,11 @@ variables:
   GKE_MEMORY_LIMIT: "512Mi"
   GKE_CPU_REQUEST: "100m"
   GKE_CPU_LIMIT: "200m"
+
+  # Node.js and npm settings
+  NODE_VERSION: "18"
+  NPM_CONFIG_CACHE: "${CI_PROJECT_DIR}/.npm"
+  CYPRESS_CACHE_FOLDER: "${CI_PROJECT_DIR}/.cypress"
 
   
 
@@ -199,6 +205,48 @@ checkout:
   artifacts:
     paths:
       - ./
+
+# === VALIDATION JOBS ===
+
+validate_package_json:
+  <<: *node_definition
+  stage: validate
+  script:
+    - echo "Validating package.json..."
+    - npm config list
+    - cat package.json | jq empty  # Validate JSON syntax
+    - echo "✅ package.json is valid"
+    - echo "Checking for security vulnerabilities..."
+    - npm audit --audit-level moderate
+    - echo "✅ No high/critical vulnerabilities found"
+  cache:
+    policy: pull
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+lint_code:
+  <<: *node_definition
+  stage: validate
+  script:
+    - echo "Installing dependencies for linting..."
+    - npm ci --only=dev
+    - echo "Running ESLint..."
+    - npx ng lint --format=junit --output-file=lint-results.xml || true  # Don't fail pipeline on lint errors
+    - echo "✅ Linting complete"
+  artifacts:
+    reports:
+      junit: lint-results.xml
+    paths:
+      - lint-results.xml
+    expire_in: 1 week
+    when: always
+  allow_failure: true  # Don't block pipeline on lint failures
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
 build:
   <<: *node_definition
