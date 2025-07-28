@@ -4,19 +4,20 @@ module.exports = function (config) {
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
     plugins: [
       require('karma-jasmine'),
-      require('karma-junit-reporter'),
-      require('karma-coverage'),
       require('karma-chrome-launcher'),
-      require('@angular-devkit/build-angular/plugins/karma'),
-      require('karma-jasmine-html-reporter')
+      require('karma-coverage'),
+      require('karma-jasmine-html-reporter'),
+      require('karma-junit-reporter'), // Make sure this is explicitly loaded
+      require('@angular-devkit/build-angular/plugins/karma')
     ],
     client: {
       clearContext: false // leave Jasmine Spec Runner output visible in browser
     },
-    reporters: ['progress', 'junit', 'coverage'],
+    reporters: ['progress', 'coverage', 'kjhtml', 'junit'],
     junitReporter: {
-      outputDir: 'coverage',
+      outputDir: './', // Output junit.xml to root directory
       outputFile: 'junit.xml',
+      suite: 'unit-tests',
       useBrowserName: false
     },
     coverageReporter: {
@@ -30,6 +31,18 @@ module.exports = function (config) {
     },
     browsers: ['ChromeHeadless'],
     singleRun: false,
-    restartOnFileChange: true
+    restartOnFileChange: true,
+    // Chrome headless configuration for CI
+    customLaunchers: {
+      ChromeHeadlessCI: {
+        base: 'ChromeHeadless',
+        flags: [
+          '--no-sandbox',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--disable-dev-shm-usage'
+        ]
+      }
+    }
   });
 };

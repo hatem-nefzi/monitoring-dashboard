@@ -283,10 +283,11 @@ unit_tests:
   script:
     - echo "Installing dependencies..."
     - npm ci
-    - echo "Installing karma-junit-reporter if not present..."
-    - npm list karma-junit-reporter || npm install --save-dev karma-junit-reporter
-    - echo "Running unit tests..."
-    - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage --reporters=progress,coverage,junit
+    - echo "Running unit tests with coverage and junit reporting..."
+    - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+    - echo "Verifying test output files..."
+    - ls -la
+    - ls -la coverage/ || echo "Coverage directory not found"
     - echo "✅ Unit tests completed"
   coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
   artifacts:
