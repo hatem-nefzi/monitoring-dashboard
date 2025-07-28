@@ -2,6 +2,7 @@ stages:
   - checkout
   - validate
   - build
+  - test
   - docker
   - deploy
   - deploy-staging
