@@ -282,10 +282,11 @@ unit_tests:
   stage: test
   script:
     - echo "Installing dependencies..."
-    - rm -rf node_modules package-lock.json # 👈 force clean
     - npm ci
+    - echo "Installing karma-junit-reporter if not present..."
+    - npm list karma-junit-reporter || npm install --save-dev karma-junit-reporter
     - echo "Running unit tests..."
-    - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage --reporters=junit,coverage
+    - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage --reporters=progress,coverage,junit
     - echo "✅ Unit tests completed"
   coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
   artifacts:
