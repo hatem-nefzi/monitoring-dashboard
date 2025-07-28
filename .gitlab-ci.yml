@@ -281,10 +281,10 @@ unit_tests:
   <<: *node_definition
   stage: test
   variables:
-    CHROME_BIN: "/usr/bin/chromium-browser"
+    CHROME_BIN: "/usr/bin/chromium"
   before_script:
     - echo "Installing dependencies..."
-    - apt-get update && apt-get install -y chromium-browser
+    - apt-get update && apt-get install -y chromium
   script:
     - echo "Installing dependencies..."
     - npm ci
