@@ -29,21 +29,21 @@ module.exports = function (config) {
         { type: 'cobertura' }
       ]
     },
-
-    // ✅ Use custom ChromeHeadless launcher for CI
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
         flags: [
           '--no-sandbox',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-setuid-sandbox',
           '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--disable-dev-shm-usage'
+          '--disable-features=VizDisplayCompositor'
         ]
       }
     },
-    browsers: ['ChromeHeadless'], // 👈 Required for CI
-    singleRun: true,                // 👈 Exit after running tests once
-    restartOnFileChange: false      // 👈 Disable file watching in CI
+    browsers: ['ChromeHeadlessCI'],
+    singleRun: true,
+    restartOnFileChange: false
   });
 };

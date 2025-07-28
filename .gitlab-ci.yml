@@ -281,10 +281,11 @@ unit_tests:
   <<: *node_definition
   stage: test
   variables:
-    CHROME_BIN: "/usr/bin/chromium-browser"
+    CHROME_BIN: "/usr/bin/chromium"
   before_script:
     - echo "Installing dependencies..."
     - apk update && apk add --no-cache chromium
+    - export CHROME_BIN=/usr/bin/chromium
   script:
     - echo "Installing dependencies..."
     - npm ci
