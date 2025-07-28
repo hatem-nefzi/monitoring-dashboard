@@ -255,7 +255,7 @@ build:
     - ls -la dist/
     - du -sh dist/
     - echo "checking build output..."
-    - test -f dist/index.html || (echo "dist/index.html not found!" && exit 1)
+    - test -f dist/browser/index.html || (echo "dist/index.html not found!" && exit 1)
     - echo "Build output is valid."
   artifacts:
     paths:
