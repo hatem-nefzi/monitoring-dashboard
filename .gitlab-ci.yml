@@ -289,7 +289,7 @@ unit_tests:
     - echo "Installing dependencies..."
     - npm ci
     - echo "Running unit tests with coverage and junit reporting..."
-    - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage
     - echo "Verifying test output files..."
     - ls -la
     - ls -la coverage/ || echo "Coverage directory not found"
