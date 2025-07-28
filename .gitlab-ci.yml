@@ -234,7 +234,7 @@ lint_code:
     - echo "Installing dependencies for linting..."
     - npm ci 
     - echo "Running ESLint..."
-    - npx ng lint --configuration=production || true
+    - npx ng lint  || true
     - echo "✅ Linting complete"
   allow_failure: true  # Don't block pipeline on lint failures
   rules:
