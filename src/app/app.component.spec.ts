@@ -1,10 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent],
+      imports: [
+        AppComponent, // ✅ standalone
+        RouterTestingModule
+      ]
     }).compileComponents();
   });
 
@@ -14,16 +18,12 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'monitoring-dashboard' title`, () => {
+  // ❌ On supprime ce test qui cherche <h1> qui n'existe plus
+  // it('should render title', () => { ... });
+
+  it('should have title property set correctly', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('monitoring-dashboard');
-  });
-
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, monitoring-dashboard');
+    expect(app.title).toBe('monitoring-dashboard');
   });
 });
