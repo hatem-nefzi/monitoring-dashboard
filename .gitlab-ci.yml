@@ -250,7 +250,7 @@ build:
     - echo "Installing dependencies..."
     - npm ci
     - echo "Building Angular application..."
-    - npm run build -- --configuration=production --output-path=dist --stats-json
+    - npm run build:stats
     - echo "Build completed successfully!"
     - echo "Listing build artifacts:"
     - ls -la dist/
