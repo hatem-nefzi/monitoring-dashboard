@@ -290,10 +290,11 @@ unit_tests:
     - echo "Installing dependencies..."
     - npm ci
     - echo "Running unit tests with coverage and junit reporting..."
-    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage 
+    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage --no-sandbox
     - echo "Verifying test output files..."
     - ls -la
     - ls -la coverage/ || echo "Coverage directory not found"
+    - cat junit.xml || echo "junit.xml not found"
     - echo "✅ Unit tests completed"
   coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
   artifacts:
@@ -311,7 +312,6 @@ unit_tests:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_COMMIT_BRANCH == "main"'
-
 
 build_size_analysis:
   <<: *node_definition

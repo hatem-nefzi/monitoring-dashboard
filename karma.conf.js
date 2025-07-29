@@ -38,12 +38,19 @@ module.exports = function (config) {
           '--disable-dev-shm-usage',
           '--disable-setuid-sandbox',
           '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
+          '--disable-features=VizDisplayCompositor',
+          '--remote-debugging-port=9222',
+          '--headless'
         ]
       }
     },
     browsers: ['ChromeHeadlessCI'],
     singleRun: true,
-    restartOnFileChange: false
+    restartOnFileChange: false,
+    // Increase timeouts for CI environment
+    browserDisconnectTimeout: 10000,
+    browserDisconnectTolerance: 3,
+    browserNoActivityTimeout: 60000,
+    captureTimeout: 60000
   });
 };
