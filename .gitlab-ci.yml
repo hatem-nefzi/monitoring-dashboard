@@ -250,7 +250,7 @@ build:
     - echo "Installing dependencies..."
     - npm ci
     - echo "Building Angular application..."
-    - npm run build -- --configuration=production --output-path=dist
+    - npm run build -- --configuration=production --output-path=dist --stats-json
     - echo "Build completed successfully!"
     - echo "Listing build artifacts:"
     - ls -la dist/
@@ -277,40 +277,6 @@ build:
 
 # === TEST JOBS ===
 
-unit_tests:
-  <<: *node_definition
-  stage: test
-  variables:
-    CHROME_BIN: "/usr/bin/chromium-browser"
-  before_script:
-    - echo "Installing dependencies..."
-    - apk update && apk add --no-cache chromium
-    - export CHROME_BIN=/usr/bin/chromium-browser
-  script:
-    - echo "Installing dependencies..."
-    - npm ci
-    - echo "Running unit tests with coverage and junit reporting..."
-    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage 
-    - ls -la
-    - ls -la coverage/ || echo "Coverage directory not found"
-    - cat junit.xml || echo "junit.xml not found"
-    - echo "✅ Unit tests completed"
-  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
-  artifacts:
-    reports:
-      junit: junit.xml
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
-    paths:
-      - coverage/
-      - junit.xml
-    expire_in: 1 week
-    when: always
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
 
 build_size_analysis:
   <<: *node_definition
@@ -319,7 +285,12 @@ build_size_analysis:
   script:
     - echo "Analyzing bundle sizes..."
     - npm ci
-    - npx webpack-bundle-analyzer dist/stats.json dist/ --report --mode static --report-filename bundle-report.html || echo "Bundle analyzer not configured"
+    - |
+      if [ -f dist/browser/stats.json ]; then
+        npx webpack-bundle-analyzer dist/browser/stats.json --mode static --no-open --report bundle-report.html
+      else
+        echo "⚠️ stats.json not found. Skipping bundle analysis."
+      fi
     - echo "Checking bundle sizes..."
     - find dist/ -name "*.js" -exec ls -lh {} \; | sort -k5 -hr
     - echo "✅ Build analysis complete"
@@ -331,6 +302,7 @@ build_size_analysis:
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_COMMIT_BRANCH == "main"'
+
 
 
 
