@@ -174,7 +174,7 @@ variables:
     USE_GKE_GCLOUD_AUTH_PLUGIN: "True"
     CLOUDSDK_CORE_PROJECT: "$GCP_PROJECT_ID"
   before_script:
-    - apt-get update && apt-get install -y curl kubectl tar google-cloud-cli-gke-gcloud-auth-plugin
+    - apt-get update && apt-get install -y --no-install-recommends curl kubectl tar google-cloud-cli-gke-gcloud-auth-plugin
     - echo "Installing Kustomize safely..."
     - export KUSTOMIZE_VERSION=v5.4.3
     - curl -Lo kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
