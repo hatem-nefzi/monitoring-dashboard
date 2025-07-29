@@ -281,22 +281,19 @@ unit_tests:
   <<: *node_definition
   stage: test
   variables:
-    CHROME_BIN: "/usr/bin/google-chrome"
+    CHROME_BIN: "/usr/bin/chromium-browser"
   before_script:
     - echo "Installing dependencies..."
-    # Install Google Chrome instead of Chromium
-    - wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apk add --no-cache gnupg && gpg --import
-    - echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list
-    - apk update && apk add --no-cache google-chrome-stable
-    - export CHROME_BIN=/usr/bin/google-chrome
+    - apk update && apk add --no-cache chromium
+    - export CHROME_BIN=/usr/bin/chromium-browser
   script:
     - echo "Installing dependencies..."
     - npm ci
     - echo "Running unit tests with coverage and junit reporting..."
-    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage
-    - echo "Verifying test output files..."
+    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage 
     - ls -la
     - ls -la coverage/ || echo "Coverage directory not found"
+    - cat junit.xml || echo "junit.xml not found"
     - echo "✅ Unit tests completed"
   coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
   artifacts:

@@ -29,28 +29,9 @@ module.exports = function (config) {
         { type: 'cobertura' }
       ]
     },
-    customLaunchers: {
-      ChromeHeadlessCI: {
-        base: 'ChromeHeadless',
-        flags: [
-          '--no-sandbox',
-          '--disable-gpu',
-          '--disable-dev-shm-usage',
-          '--disable-setuid-sandbox',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--remote-debugging-port=9222',
-          '--headless'
-        ]
-      }
-    },
-    browsers: ['ChromeHeadlessCI'],
+    // Remove custom launchers and use default ChromeHeadless
+    browsers: ['ChromeHeadless'],
     singleRun: true,
-    restartOnFileChange: false,
-    // Increase timeouts for CI environment
-    browserDisconnectTimeout: 10000,
-    browserDisconnectTolerance: 3,
-    browserNoActivityTimeout: 60000,
-    captureTimeout: 60000
+    restartOnFileChange: false
   });
 };
