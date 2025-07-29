@@ -290,8 +290,7 @@ unit_tests:
     - echo "Installing dependencies..."
     - npm ci
     - echo "Running unit tests with coverage and junit reporting..."
-    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage --no-sandbox
-    - echo "Verifying test output files..."
+    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage 
     - ls -la
     - ls -la coverage/ || echo "Coverage directory not found"
     - cat junit.xml || echo "junit.xml not found"
