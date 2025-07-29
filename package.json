@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "build:stats": "ng build --configuration production --output-path=dist --stats-json && cp dist/browser/stats.json ./stats.json"
+    "build:stats": "ng build --configuration production --output-path=dist --stats-json && cp dist/stats.json ./stats.json"
   },
   "private": true,
   "dependencies": {
