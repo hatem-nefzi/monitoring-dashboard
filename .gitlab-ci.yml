@@ -324,6 +324,58 @@ docker_publish:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"  # ou "main" si tu veux le faire sur main.
 
+# ============= SECURITY SCANNING =============
+
+container_security_scan:
+  <<: *job_definition
+  stage: security-scan
+  image: aquasec/trivy:latest
+  needs: ["docker_publish"]
+  variables:
+    TRIVY_NO_PROGRESS: "true"
+    TRIVY_CACHE_DIR: ".trivycache/"
+  script:
+    - echo "Scanning container image for vulnerabilities..."
+    - trivy image --exit-code 0 --severity HIGH,CRITICAL --format table "$CI_REGISTRY_IMAGE:${CI_COMMIT_SHORT_SHA}"
+    - trivy image --exit-code 1 --severity CRITICAL --format json --output trivy-report.json "$CI_REGISTRY_IMAGE:${CI_COMMIT_SHORT_SHA}"
+    - echo "✅ Security scan completed"
+  artifacts:
+    reports:
+      junit: trivy-report.json
+    paths:
+      - trivy-report.json
+    expire_in: 1 week
+  allow_failure: true  # Don't block pipeline initially
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+
+dependency_security_audit:
+  <<: *node_definition
+  stage: security-scan
+  needs: ["build"]
+  script:
+    - echo "Running security audit on dependencies..."
+    - npm audit --audit-level critical --json > npm-audit.json || true
+    - npm audit --audit-level critical
+    - echo "Checking for known security issues..."
+    - |
+      CRITICAL_VULNS=$(cat npm-audit.json | jq '.metadata.vulnerabilities.critical // 0')
+      HIGH_VULNS=$(cat npm-audit.json | jq '.metadata.vulnerabilities.high // 0')
+      echo "Critical vulnerabilities: $CRITICAL_VULNS"
+      echo "High vulnerabilities: $HIGH_VULNS"
+      if [ "$CRITICAL_VULNS" -gt 0 ]; then
+        echo "❌ Critical vulnerabilities found! Please fix before deploying to production."
+        exit 1
+      fi
+  artifacts:
+    reports:
+      junit: npm-audit.json
+    paths:
+      - npm-audit.json
+    expire_in: 1 week
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
 
 
 deploy_frontend_production:
