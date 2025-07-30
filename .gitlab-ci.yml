@@ -283,16 +283,9 @@ build_size_analysis:
   stage: test
   needs: ["build"]
   script:
-    - echo "Analyzing bundle sizes..."
+    - echo "Analyzing bundle sizes with source-map-explorer..."
     - npm ci
-    - |
-      if [ -f dist/stats.json ]; then
-        npx webpack-bundle-analyzer dist/stats.json --mode static --no-open --report bundle-report.html
-      else
-        echo "⚠️ stats.json not found. Skipping bundle analysis."
-      fi
-    - echo "Checking bundle sizes..."
-    - find dist/ -name "*.js" -exec ls -lh {} \; | sort -k5 -hr
+    - npm run analyze
     - echo "✅ Build analysis complete"
   artifacts:
     paths:
@@ -302,6 +295,7 @@ build_size_analysis:
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_COMMIT_BRANCH == "main"'
+
 
 
 

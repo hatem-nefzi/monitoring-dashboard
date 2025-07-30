@@ -8,7 +8,9 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "build:stats": "ng build --configuration production --output-path=dist --stats-json && cp dist/stats.json ./stats.json"
+    "build:stats": "ng build --configuration production --output-path=dist --stats-json && cp dist/stats.json ./stats.json",
+    "analyze": "source-map-explorer dist/*.js --html > bundle-report.html"
+
   },
   "private": true,
   "dependencies": {
