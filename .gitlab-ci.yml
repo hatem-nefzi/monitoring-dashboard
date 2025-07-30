@@ -286,7 +286,7 @@ build_size_analysis:
     - echo "Analyzing bundle sizes..."
     - npm ci
     - |
-      if [ -f dist/browser/stats.json ]; then
+      if [ -f dist/stats.json ]; then
         npx webpack-bundle-analyzer dist/stats.json --mode static --no-open --report bundle-report.html
       else
         echo "⚠️ stats.json not found. Skipping bundle analysis."
