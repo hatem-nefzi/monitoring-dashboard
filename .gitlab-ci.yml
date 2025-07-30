@@ -669,16 +669,18 @@ lighthouse_performance:
   image: mcr.microsoft.com/playwright:v1.43.1-jammy
   needs: ["deploy_monitoring_frontend_gke"]
   variables:
-    LIGHTHOUSE_URL: "https://monitoring-dashboard.duckdns.org"  # Replace with your actual domain
+    LIGHTHOUSE_URL: "https://monitoring-dashboard.duckdns.org"
+    CHROME_PATH: "/opt/google/chrome/chrome"
   script:
     - echo "Installing Lighthouse..."
-    - npm install -g @lhci/cli@0.12.x lighthouse
+    - npm install -g lighthouse
     - echo "Running Lighthouse performance audit..."
     - |
       lighthouse ${LIGHTHOUSE_URL} \
         --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
         --output=html \
         --output-path=lighthouse-report.html
+
       lighthouse ${LIGHTHOUSE_URL} \
         --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
         --output=json \
