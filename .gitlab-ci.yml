@@ -330,7 +330,9 @@ docker_publish:
 container_security_scan:
   <<: *job_definition
   stage: security-scan
-  image: aquasec/trivy:latest
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
   needs: ["docker_publish"]
   variables:
     TRIVY_NO_PROGRESS: "true"
