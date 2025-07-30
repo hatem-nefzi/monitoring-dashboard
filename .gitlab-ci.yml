@@ -661,3 +661,37 @@ deploy_monitoring_frontend_gke:
 
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
+
+
+lighthouse_performance:
+  <<: *job_definition
+  stage: monitoring-verify
+  image: cypress/browsers:node18.12.0-chrome107
+  needs: ["deploy_monitoring_frontend_gke"]
+  variables:
+    LIGHTHOUSE_URL: "https://monitoring-dashboard.duckdns.org"  # Replace with your actual domain
+  script:
+    - echo "Installing Lighthouse..."
+    - npm install -g @lhci/cli@0.12.x lighthouse
+    - echo "Running Lighthouse performance audit..."
+    - |
+      lighthouse ${LIGHTHOUSE_URL} \
+        --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+        --output=html \
+        --output-path=lighthouse-report.html
+      lighthouse ${LIGHTHOUSE_URL} \
+        --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+        --output=json \
+        --output-path=lighthouse-report.json
+    - echo "✅ Performance audit complete"
+  artifacts:
+    paths:
+      - lighthouse-report.html
+      - lighthouse-report.json
+    expire_in: 1 week
+    when: always
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
