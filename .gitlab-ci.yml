@@ -666,7 +666,7 @@ deploy_monitoring_frontend_gke:
 lighthouse_performance:
   <<: *job_definition
   stage: monitoring-verify
-  image: cypress/browsers:node18.12.0-chrome107
+  image: mcr.microsoft.com/playwright:v1.43.1-jammy
   needs: ["deploy_monitoring_frontend_gke"]
   variables:
     LIGHTHOUSE_URL: "https://monitoring-dashboard.duckdns.org"  # Replace with your actual domain
