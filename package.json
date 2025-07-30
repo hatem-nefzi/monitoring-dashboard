@@ -10,7 +10,6 @@
     "lint": "ng lint",
     "build:stats": "ng build --configuration production --output-path=dist --stats-json && cp dist/stats.json ./stats.json",
     "analyze": "source-map-explorer dist/*.js --html > bundle-report.html"
-
   },
   "private": true,
   "dependencies": {
@@ -49,6 +48,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "karma-junit-reporter": "^2.0.1",
+    "source-map-explorer": "^2.5.3",
     "typescript": "~5.8.3"
   }
 }

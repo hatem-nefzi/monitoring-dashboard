@@ -285,7 +285,7 @@ build_size_analysis:
   script:
     - echo "Analyzing bundle sizes with source-map-explorer..."
     - npm ci
-    - npm run analyze
+    - npx source-map-explorer dist/browser/*.js --html > bundle-report.html
     - echo "✅ Build analysis complete"
   artifacts:
     paths:
@@ -295,7 +295,6 @@ build_size_analysis:
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_COMMIT_BRANCH == "main"'
-
 
 
 
