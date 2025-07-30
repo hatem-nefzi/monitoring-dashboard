@@ -355,7 +355,7 @@ dependency_security_audit:
   stage: security-scan
   needs: ["build"]
   script:
-    - apt-get update && apt-get install -y jq
+    - apk add --no-cache jq
     - echo "Running security audit on dependencies..."
     - npm audit --audit-level critical --json > npm-audit.json || true
     - npm audit --audit-level critical
