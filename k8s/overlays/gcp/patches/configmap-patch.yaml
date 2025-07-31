@@ -29,6 +29,8 @@ data:
 
         # API proxy
         location /api/ {
+          # Log API requests for metrics collection
+          access_log /dev/stdout combined;
           proxy_pass https://monitoring-backend.duckdns.org;
           proxy_ssl_server_name on;
           proxy_ssl_verify off;
@@ -55,6 +57,11 @@ data:
         # Healthcheck
         location /health {
           return 200 "ok\n";
+          add_header Content-Type text/plain;
+        }
+        # basic metrics endpoint
+        location /metrics {
+          return 200 "# HELP nginx_up Nginx server status\n# TYPE nginx_up gauge\nnginx_up 1\n";
           add_header Content-Type text/plain;
         }
       }

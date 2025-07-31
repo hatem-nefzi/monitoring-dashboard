@@ -4,8 +4,12 @@ metadata:
   name: monitoring-frontend-service
   annotations:
     cloud.google.com/neg: '{"ingress":true}' # Enable NEG for GKE Ingress
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
+    prometheus.io/scrape: "true"
   labels:
     app: monitoring-frontend
+  
 spec:
   type: NodePort
   ports:
