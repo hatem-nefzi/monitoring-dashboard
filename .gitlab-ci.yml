@@ -663,33 +663,4 @@ deploy_monitoring_frontend_gke:
     - if: $CI_COMMIT_BRANCH == "develop"
 
 
-lighthouse_performance:
-  <<: *job_definition
-  stage: monitoring-verify
-  image: ghcr.io/treosh/lighthouse-ci:latest
-  needs: ["deploy_monitoring_frontend_gke"]
-  variables:
-    LIGHTHOUSE_URL: "https://monitoring-dashboard.duckdns.org"
-  script:
-    - echo "Running Lighthouse performance audit..."
-    - |
-      lighthouse ${LIGHTHOUSE_URL} \
-        --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
-        --output=html \
-        --output-path=lighthouse-report.html
-    - |
-      lighthouse ${LIGHTHOUSE_URL} \
-        --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
-        --output=json \
-        --output-path=lighthouse-report.json
-  artifacts:
-    paths:
-      - lighthouse-report.html
-      - lighthouse-report.json
-    expire_in: 1 week
-    when: always
-  allow_failure: true
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
+
