@@ -64,5 +64,10 @@ data:
           return 200 "# HELP nginx_up Nginx server status\n# TYPE nginx_up gauge\nnginx_up 1\n";
           add_header Content-Type text/plain;
         }
-      }
+        # Public route for Lighthouse audits
+        location /public-health {
+          return 200 "ok";
+          add_header Content-Type text/plain;
+
+        }
     }
