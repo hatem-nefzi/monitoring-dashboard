@@ -667,22 +667,12 @@ deploy_monitoring_frontend_gke:
 lighthouse_audit:
   <<: *monitoring_gke_deploy
   stage: test
-  image: node:18-slim
+  image: ghcr.io/treosh/lighthouse-ci:latest
   variables:
-    LIGHTHOUSE_URL: "https://monitoring-dashboard.duckdns.org/public-health"  # ✅ Replace with your public route if changed
-  before_script:
-    - apt-get update && apt-get install -y curl unzip wget jq
-    - npm install -g @lhci/cli
-    - echo "Downloading Chromium..."
-    - export CHROME_URL="https://storage.googleapis.com/chrome-for-testing-public/124.0.6367.208/linux64/chrome-linux64.zip"
-    - wget -qO chrome.zip "$CHROME_URL"
-    - unzip chrome.zip
-    - export CHROME_PATH=$(pwd)/chrome-linux64/chrome
-    - echo "✅ Chromium path $CHROME_PATH"
+    LIGHTHOUSE_URL: "https://monitoring-dashboard.duckdns.org/public-health"
   script:
     - echo "Running Lighthouse audit on $LIGHTHOUSE_URL"
     - lhci collect --url="$LIGHTHOUSE_URL" \
-        --settings.chromePath="$CHROME_PATH" \
         --settings.chromeFlags="--headless --no-sandbox --disable-gpu" \
         --outputPath="./.lighthouseci/report.html"
     - echo "✅ Lighthouse audit complete"
