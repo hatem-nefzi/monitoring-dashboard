@@ -616,7 +616,7 @@ deploy_monitoring_frontend_gke:
         -n ${GKE_FRONTEND_NAMESPACE} \
         --dry-run=client -o yaml | kubectl apply -f -
 
-    # Patch image tag with commit SHA
+    # Patch image tag with commit SHA.
     - ls 
     - echo "Patching image with SHA $CI_COMMIT_SHORT_SHA"
     - cd k8s/overlays/gcp
@@ -665,11 +665,15 @@ deploy_monitoring_frontend_gke:
 
 
 lighthouse_audit:
-  <<: *monitoring_gke_deploy
+  <<: *job_definition  # Use the basic job template instead
   stage: test
   image: cypress/browsers:node18.12.0-chrome107
+  needs: ["deploy_monitoring_frontend_gke"]
   variables:
     LIGHTHOUSE_URL: "https://monitoring-dashboard.duckdns.org/public-health"
+  before_script:
+    - echo "Installing Lighthouse CI..."
+    - npm install -g @lhci/cli@0.12.x
   script:
     - echo "Running Lighthouse audit on $LIGHTHOUSE_URL"
     - lhci collect --url="$LIGHTHOUSE_URL" \
