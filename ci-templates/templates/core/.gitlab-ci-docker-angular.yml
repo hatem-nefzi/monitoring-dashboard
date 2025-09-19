@@ -1,5 +1,5 @@
 include:
-  # Include all required foundation templates first
+  # First include all the dependencies
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
