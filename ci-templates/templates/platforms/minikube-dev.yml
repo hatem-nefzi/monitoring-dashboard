@@ -10,10 +10,16 @@ include:
     file: 'ci-templates/templates/shared/variables/dev.yml'
 
 
+
+# Hide the original job so it doesn't run
+deploy:dev:
+  rules:
+    - when: never
+
 # Just extend and override rules
 deploy:angular:dev:
   extends: deploy:dev
   variables:
-    APP_NAME: "angular-app"  # Only override what's different
+    APP_NAME: "monitoring-frontend"  # Only override what's different
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
