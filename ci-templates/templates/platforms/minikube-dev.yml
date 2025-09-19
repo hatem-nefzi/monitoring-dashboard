@@ -1,13 +1,4 @@
 include:
-  # Include the foundation FIRST (contains .default_job)
-  - project: 'proxiad-academie/ops-monitoring'
-    ref: experiment
-    file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
-  
-  # Then include the docker template (needs .default_job from foundation)
-  - project: 'proxiad-academie/ops-monitoring'
-    ref: experiment
-    file: 'ci-templates/templates/core/.gitlab-ci-docker.yml'
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-kubernetes.yml'
@@ -17,11 +8,7 @@ include:
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/shared/variables/dev.yml'
-# Your job
-docker_publish_angular:
-  extends: .docker_publish  # Now this works!
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+
 
 # Just extend and override rules
 deploy:angular:dev:
