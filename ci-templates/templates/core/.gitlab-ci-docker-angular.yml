@@ -8,15 +8,7 @@ include:
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-docker.yml'
-  - project: 'proxiad-academie/ops-monitoring'
-    ref: experiment
-    file: 'ci-templates/templates/core/.gitlab-ci-kubernetes.yml'
-  - project: 'proxiad-academie/ops-monitoring'
-    ref: experiment
-    file: 'ci-templates/templates/platforms/dev.yml'
-  - project: 'proxiad-academie/ops-monitoring'
-    ref: experiment
-    file: 'ci-templates/templates/shared/variables/dev.yml'
+
 # Your job
 docker_publish_angular:
   extends: .docker_publish  # Now this works!
