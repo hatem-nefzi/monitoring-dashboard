@@ -3,3 +3,6 @@ include:
   - local: 'ci-templates/templates/core/.gitlab-ci-build-angular.yml'
   - local: 'ci-templates/templates/core/.gitlab-ci-docker-angular.yml'
   - local: 'ci-templates/templates/platforms/minikube-dev.yml'
+
+variables:
+  APP_NAME: "monitoring-frontend"
