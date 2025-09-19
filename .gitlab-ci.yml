@@ -1,3 +1,4 @@
 include:
   - local: 'ci-templates/templates/core/.gitlab-ci-foundation-angular.yml'
   - local: 'ci-templates/templates/core/.gitlab-ci-build-angular.yml'
+  - local: 'ci-templates/templates/core/.gitlab-ci-docker-angular.yml'

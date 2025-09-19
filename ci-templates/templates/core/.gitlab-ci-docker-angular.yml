@@ -1,0 +1,11 @@
+include:
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/core/.gitlab-ci-docker.yml'
+
+
+
+docker_publish_angular:
+  extends: .docker_publish
+rules:
+  - if: '$CI_COMMIT_BRANCH == "develop'
