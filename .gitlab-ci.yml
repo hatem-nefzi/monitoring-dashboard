@@ -13,6 +13,7 @@ stages:
 
 variables:
   #versioning
+  #testing if pipeline still works 
   COMMIT_TAG: "${CI_COMMIT_SHORT_SHA}"
   # GitLab Container Registry variables
   GITLAB_REGISTRY_URL: "$CI_REGISTRY"
