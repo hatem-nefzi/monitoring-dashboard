@@ -11,7 +11,7 @@ checkout:
   extends: .default_job  # This comes from backend common.yml
   stage: checkout
   script:
-    - echo "Checking out Angular project: ${APP_NAME}"
+    - echo "Checking out Angular project ${APP_NAME}"
     - echo "Cleaning previous build artifacts..."
     - rm -rf dist/ node_modules/ .angular/
     - echo "✅ Checkout completed"
