@@ -4,7 +4,7 @@ include:
     file: 'ci-templates/templates/core/.gitlab-ci-kubernetes.yml'
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
-    file: 'ci-templates/templates/platforms/dev.yml'
+    file: 'ci-templates/templates/platforms/minikube-dev.yml'
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/shared/variables/dev.yml'
