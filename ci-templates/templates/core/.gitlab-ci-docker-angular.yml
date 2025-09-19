@@ -1,11 +1,23 @@
 include:
+  # Include all required foundation templates first
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
+  
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/shared/variables/computed.yml'
+  
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/shared/variables/global.yml'
+  
+  # Then include the docker template
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-docker.yml'
 
-
-
 docker_publish_angular:
   extends: .docker_publish
-rules:
-  - if: '$CI_COMMIT_BRANCH == "develop'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
