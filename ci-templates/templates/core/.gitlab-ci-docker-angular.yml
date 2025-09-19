@@ -11,6 +11,6 @@ include:
 
 # Your job
 docker_publish_angular:
-  extends: docker_publish
+  extends: .docker_publish  # Now this works!
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
