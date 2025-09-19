@@ -2,6 +2,7 @@ include:
   - local: 'ci-templates/templates/core/.gitlab-ci-foundation-angular.yml'
   # Shared infrastructure templates from backend project
   - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
 
 
