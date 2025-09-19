@@ -7,7 +7,7 @@ include:
   # Then include the docker template (needs .default_job from foundation)
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
-    file: 'ci-templates/templates/core/.gitlab-ci-docker.yml'
+    file: 'ci-templates/templates/core/.gitlab-ci-docker-standalone.yml'
 
 # Your job
 docker_publish_angular:
