@@ -1,0 +1,50 @@
+include:
+  - local: 'ci-templates/templates/core/.gitlab-ci-foundation-angular.yml'
+  # Shared infrastructure templates from backend project
+  - project: 'proxiad-academie/ops-monitoring'
+    file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
+
+
+# Checkout job
+checkout:
+  extends: .default_job  # This comes from backend common.yml
+  stage: checkout
+  script:
+    - echo "Checking out Angular project: ${APP_NAME}"
+    - echo "Cleaning previous build artifacts..."
+    - rm -rf dist/ node_modules/ .angular/
+    - echo "✅ Checkout completed"
+
+# Build job - Core Angular application logic
+build:
+  extends: .angular_base
+  stage: build
+  script:
+    - echo "📦 Installing dependencies for ${APP_NAME}..."
+    - npm ci
+    - echo "🔨 Building Angular application..."
+    - npm run build:stats || npm run build
+    - echo "✅ Build completed successfully!"
+    - echo "📊 Build artifacts summary:"
+    - ls -la dist/
+    - du -sh dist/
+    - echo "🔍 Validating build output..."
+    - test -f dist/browser/index.html || test -f dist/index.html || (echo "❌ Build output not found!" && exit 1)
+    - echo "✅ Build validation passed"
+  artifacts:
+    paths:
+      - dist/
+      - package.json
+      - package-lock.json
+      - node_modules/
+    reports:
+      dotenv: build.env
+    expire_in: 2 hours
+  after_script:
+    - echo "BUILD_VERSION=${CI_COMMIT_SHORT_SHA}" > build.env
+    - echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> build.env
+    - echo "APP_NAME=${APP_NAME}" >> build.env
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
