@@ -1,22 +1,15 @@
 include:
-  # First include all the dependencies
+  # Include the foundation FIRST (contains .default_job)
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
   
-  - project: 'proxiad-academie/ops-monitoring'
-    ref: experiment
-    file: 'ci-templates/templates/shared/variables/computed.yml'
-  
-  - project: 'proxiad-academie/ops-monitoring'
-    ref: experiment
-    file: 'ci-templates/templates/shared/variables/global.yml'
-  
-  # Then include the docker template
+  # Then include the docker template (needs .default_job from foundation)
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-docker.yml'
 
+# Your job
 docker_publish_angular:
   extends: .docker_publish
   rules:
