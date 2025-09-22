@@ -23,16 +23,32 @@ owasp_dependency_check:
   rules:
     - when: never
 
-owasp_dependency_check_angular:
-  extends: owasp_dependency_check
-  image: maven:3.9.6-eclipse-temurin-11
-  before_script:
-    # Install Node.js in the Maven image
-    - apt-get update
-    - apt-get install -y curl
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
-    - mkdir -p .cache/dependency-check
-    - if [ -f package.json ]; then npm install --package-lock-only; fi
+dependency_security_audit:
+  extends: .angular_base
+  stage: security-scan
+  needs: ["build"]
+  script:
+    - apk add --no-cache jq
+    - echo "Running security audit on dependencies..."
+    - npm audit --audit-level critical --json > npm-audit.json || true
+    - npm audit --audit-level critical
+    - echo "Checking for known security issues..."
+    - |
+      CRITICAL_VULNS=$(cat npm-audit.json | jq '.metadata.vulnerabilities.critical // 0')
+      HIGH_VULNS=$(cat npm-audit.json | jq '.metadata.vulnerabilities.high // 0')
+      echo "Critical vulnerabilities: $CRITICAL_VULNS"
+      echo "High vulnerabilities: $HIGH_VULNS"
+      if [ "$CRITICAL_VULNS" -gt 0 ]; then
+        echo "❌ Critical vulnerabilities found! Please fix before deploying to production."
+        exit 1
+      fi
+  artifacts:
+    reports:
+      junit: npm-audit.json
+    paths:
+      - npm-audit.json
+    expire_in: 1 week
+  allow_failure: true
   rules:
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+
