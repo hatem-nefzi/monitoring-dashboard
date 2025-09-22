@@ -9,8 +9,10 @@ RUN npm run build -- --output-path=/app/dist --configuration=production
 # Stage 2: Serve
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 
-# Remove default config
+# Switch to root temporarily to remove files
+USER root
 RUN rm /etc/nginx/conf.d/default.conf
+USER nginx  # Switch back to non-root user
 
 # Copy our files
 COPY --from=builder /app/dist /usr/share/nginx/html
