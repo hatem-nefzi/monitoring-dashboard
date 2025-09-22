@@ -7,6 +7,6 @@ include:
     file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
 
 container_scan_angular:
-  extends: container_scan
+  extends: .container_scan_base
   needs: ["docker_publish_angular"]
 
