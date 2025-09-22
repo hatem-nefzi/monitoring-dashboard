@@ -25,7 +25,7 @@ owasp_dependency_check:
 
 dependency_security_audit:
   extends: .angular_base
-  stage: security-scan
+  stage: security
   needs: ["build"]
   script:
     - apk add --no-cache jq
