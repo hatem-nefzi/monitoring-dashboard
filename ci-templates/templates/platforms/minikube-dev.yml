@@ -13,6 +13,7 @@ include:
     file: 'ci-templates/templates/shared/variables/computed.yml'
 
 #Hide the original job so it doesn't run
+#update gitlab-personal-token variable in project settings 
 deploy:dev:
   rules:
     - when: never
