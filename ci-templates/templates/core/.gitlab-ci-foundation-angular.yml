@@ -5,6 +5,7 @@ stages:
   - build
   - test
   - docker
+  - docker_security
   - security-scan
   - deploy-staging
   - deploy-production
