@@ -25,6 +25,6 @@ owasp_dependency_check:
 
 owasp_dependency_check_angular:
   extends: owasp_dependency_check
-  image: node:18-jdk11
+  image: node:18
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
