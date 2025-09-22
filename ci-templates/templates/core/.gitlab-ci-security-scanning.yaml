@@ -17,3 +17,14 @@ container_scan:
 container_scan_angular:
   extends: .container_scan_base
   needs: ["docker_publish_angular"]
+
+# Disable the original OWASP job
+owasp_dependency_check:
+  rules:
+    - when: never
+
+owasp_dependency_check_angular:
+  extends: owasp_dependency_check
+  image: node-18:jdk11
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
