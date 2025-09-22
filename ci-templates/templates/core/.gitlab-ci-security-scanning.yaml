@@ -25,6 +25,6 @@ owasp_dependency_check:
 
 owasp_dependency_check_angular:
   extends: owasp_dependency_check
-  image: maven:3.9-eclipse-temurin-11-nodejs-18
+  image: maven:3.9.6-eclipse-temurin-11
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
