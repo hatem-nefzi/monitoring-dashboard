@@ -1,16 +1,19 @@
+# First, include the template that defines .container_scan_base
 include:
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-security-scanning.yml'
+
+# Then include foundation (if needed for dependencies)
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
 
-
-
-
-
+# Now you can safely extend .container_scan_base
+container_scan:
+  rules:
+    - when: never
+  
 container_scan_angular:
   extends: .container_scan_base
   needs: ["docker_publish_angular"]
-
