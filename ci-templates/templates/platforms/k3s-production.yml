@@ -18,6 +18,6 @@ deploy:staging:
 deploy:staging:angular:
   extends: deploy:staging
   variables:
-    APP_NAME: "monitoring-frontend"  # Only override what's different
+    APP_NAME: "monitoring-frontend"  # Only override what's different.
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
