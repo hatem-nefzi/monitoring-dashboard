@@ -4,5 +4,4 @@ include:
     file: 'ci-templates/templates/core/.gitlab-ci-security-scanning.yml'
   - project: 'proxiad-academie/ops-monitoring'
     ref: experiment
-    file: 'ci-templates/templates/core/.gitlab-ci-foundation-angular.yml'
-
+    file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
