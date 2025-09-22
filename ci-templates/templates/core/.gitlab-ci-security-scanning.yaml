@@ -6,7 +6,7 @@ include:
     ref: experiment
     file: 'ci-templates/templates/core/.gitlab-ci-foundation.yml'
 
-container_scan:
+container_scan_angular:
   extends: container_scan
   needs: ["docker_publish_angular"]
 
