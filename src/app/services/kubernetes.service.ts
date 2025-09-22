@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
+//opentelemetry added import
+import { HttpHeaders } from '@angular/common/http';
 import {
   PodInfo,
   DeploymentInfo,
@@ -16,12 +18,16 @@ export class KubernetesService {
   // Changed from localhost:9090 to relative path
   // This will route through the ingress to your backend
   private apiUrl = '/api/kubernetes';
+  //opentelemetry added headers
+  private generateTraceId(): string {
+  return Math.random().toString(36).substring(2, 15);
+}
 
   constructor(private http: HttpClient) { }
-
+    //opentelemetry added headers
   getPods(): Observable<KubernetesResponse<PodInfo[]>> {
-    return this.http.get<KubernetesResponse<PodInfo[]>>(`${this.apiUrl}/pods`);
-  }
+  return this.http.get<KubernetesResponse<PodInfo[]>>(`${this.apiUrl}/pods`);
+}
 
   getPodNames(): Observable<KubernetesResponse<string[]>> {
     return this.http.get<KubernetesResponse<string[]>>(`${this.apiUrl}/pod-names`);
