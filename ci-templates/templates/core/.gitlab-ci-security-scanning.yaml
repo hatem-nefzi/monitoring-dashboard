@@ -8,10 +8,8 @@ include:
 
 
 
-container_scan:
-rules:
-  - when: never
-  
+
+
 container_scan_angular:
   extends: .container_scan_base
   needs: ["docker_publish_angular"]
