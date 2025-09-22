@@ -1,0 +1,8 @@
+include:
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/core/.gitlab-ci-security-scanning.yaml'
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/core/.gitlab-ci-foundation-angular.yml'
+

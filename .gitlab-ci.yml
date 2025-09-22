@@ -4,6 +4,7 @@ include:
   - local: 'ci-templates/templates/core/.gitlab-ci-docker-angular.yml'
   - local: 'ci-templates/templates/platforms/minikube-staging.yml'
   - local: 'ci-templates/templates/platforms/k3s-production.yml'
+  - local: 'ci-templates/templates/core/.gitlab-ci-security-scanning.yaml'
 
 variables:
   APP_NAME: "monitoring-frontend"
