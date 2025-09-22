@@ -1,0 +1,23 @@
+include:
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/core/.gitlab-ci-kubernetes.yml'
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/platforms/k3s-staging.yml'
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+    file: 'ci-templates/templates/shared/variables/staging.yml'
+  - project: 'proxiad-academie/ops-monitoring'
+    ref: experiment
+
+deploy:staging:
+  rules:
+    - when: never
+
+deploy:staging:angular:
+  extends: deploy:staging
+  variables:
+    APP_NAME: "monitoring-frontend"  # Only override what's different
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
