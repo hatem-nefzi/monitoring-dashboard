@@ -26,5 +26,13 @@ owasp_dependency_check:
 owasp_dependency_check_angular:
   extends: owasp_dependency_check
   image: maven:3.9.6-eclipse-temurin-11
+  before_script:
+    # Install Node.js in the Maven image
+    - apt-get update
+    - apt-get install -y curl
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - mkdir -p .cache/dependency-check
+    - if [ -f package.json ]; then npm install --package-lock-only; fi
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
