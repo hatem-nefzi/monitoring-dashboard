@@ -13,7 +13,7 @@ resources:
 images:
 - name: monitoring-frontend
   newName: registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui
-  newTag: 49889be1
+  newTag: c22d2a4a
 patches:
 - path: configmap-patch.yaml
 - path: deployment-patch.yaml
