@@ -3,6 +3,7 @@ stages:
   - checkout
   - validate
   - build
+  - security-scan
   - test
   - docker
   - docker_security
