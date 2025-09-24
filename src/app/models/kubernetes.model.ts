@@ -26,6 +26,7 @@ export interface DeploymentInfo {
   replicas: number;
   availableReplicas: number;
   labels: { [key: string]: string };
+  creationTimestamp?: string;
 }
 
 export interface PipelineStatus {

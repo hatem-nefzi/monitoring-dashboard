@@ -1,142 +1,295 @@
 <!-- src/components/resource-dashboard/resource-dashboard.component.html -->
 
 <mat-card>
-    <mat-card-header>
-      <mat-card-title>Kubernetes Resources Dashboard</mat-card-title>
-      <mat-card-subtitle>View deployments, services, and ingresses</mat-card-subtitle>
-    </mat-card-header>
-  
-    <mat-card-content>
-      <div class="controls">
-        <mat-form-field appearance="outline">
-          <mat-label>Namespace</mat-label>
-          <mat-select [formControl]="namespaceControl">
-            <mat-option *ngFor="let ns of namespaces" [value]="ns">{{ ns }}</mat-option>
-          </mat-select>
-        </mat-form-field>
-  
-        <div class="spacer"></div>
-  
-        <button mat-icon-button (click)="manualRefresh()" [disabled]="loading">
-          <mat-icon>refresh</mat-icon>
+  <mat-card-header>
+    <mat-card-title>Kubernetes Resources Dashboard</mat-card-title>
+    <mat-card-subtitle>
+      <div class="stats-container">
+        <span class="stat-item">
+          <mat-icon class="stat-icon">deployment</mat-icon>
+          {{ stats.healthyDeployments }}/{{ stats.totalDeployments }} Deployments Healthy
+        </span>
+        <span class="stat-item">
+          <mat-icon class="stat-icon">service</mat-icon>
+          {{ stats.totalServices }} Services
+        </span>
+        <span class="stat-item">
+          <mat-icon class="stat-icon">language</mat-icon>
+          {{ stats.totalIngresses }} Ingresses
+        </span>
+      </div>
+    </mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div class="controls">
+      <mat-form-field appearance="outline">
+        <mat-label>Namespace</mat-label>
+        <mat-select [formControl]="namespaceControl">
+          <mat-option *ngFor="let ns of namespaces" [value]="ns">
+            {{ ns }}
+            <span *ngIf="ns === 'all'" class="namespace-badge">(All)</span>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search resources...</mat-label>
+        <input matInput [formControl]="searchControl" placeholder="name, namespace, labels...">
+        <mat-icon matSuffix>search</mat-icon>
+        <button *ngIf="searchControl.value" matSuffix mat-icon-button 
+                (click)="clearSearch()" class="clear-search">
+          <mat-icon>close</mat-icon>
         </button>
-  
-        <button mat-icon-button (click)="toggleAutoRefresh()" [color]="autoRefreshEnabled ? 'primary' : ''">
+      </mat-form-field>
+
+      <div class="spacer"></div>
+
+      <div class="control-buttons">
+        <button mat-icon-button (click)="manualRefresh()" [disabled]="loading"
+                matTooltip="Refresh data">
+          <mat-icon [class.rotating]="loading">refresh</mat-icon>
+        </button>
+
+        <button mat-icon-button (click)="toggleAutoRefresh()" 
+                [class.auto-refresh-active]="autoRefreshEnabled"
+                [matTooltip]="autoRefreshEnabled ? 'Auto-refresh enabled' : 'Auto-refresh disabled'">
           <mat-icon>{{ autoRefreshEnabled ? 'timer' : 'timer_off' }}</mat-icon>
         </button>
       </div>
-  
-      <div class="loading-spinner" *ngIf="loading">
-        <mat-spinner diameter="40"></mat-spinner>
-      </div>
-  
-      <mat-tab-group [selectedIndex]="selectedTab.value" (selectedIndexChange)="selectedTab.setValue($event)">
-        <mat-tab label="Deployments">
-          <div class="table-container">
-            <table mat-table [dataSource]="deployments" class="mat-elevation-z8">
-              <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
-                <td mat-cell *matCellDef="let element">{{ element.name }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="namespace">
-                <th mat-header-cell *matHeaderCellDef>Namespace</th>
-                <td mat-cell *matCellDef="let element">{{ element.namespace }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="replicas">
-                <th mat-header-cell *matHeaderCellDef>Replicas</th>
-                <td mat-cell *matCellDef="let element">{{ element.replicas }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="available">
-                <th mat-header-cell *matHeaderCellDef>Available</th>
-                <td mat-cell *matCellDef="let element">{{ element.availableReplicas }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="labels">
-                <th mat-header-cell *matHeaderCellDef>Labels</th>
-                <td mat-cell *matCellDef="let element">{{ formatLabels(element.labels) }}</td>
-              </ng-container>
-  
-              <tr mat-header-row *matHeaderRowDef="deploymentColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: deploymentColumns;"></tr>
-            </table>
+    </div>
+
+    <div class="loading-spinner" *ngIf="loading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <mat-tab-group [selectedIndex]="selectedTab.value" (selectedIndexChange)="selectedTab.setValue($event)">
+      <!-- Deployments Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">deployment</mat-icon>
+          Deployments
+          <span class="resource-count" 
+                [matBadge]="filteredDeployments.length" 
+                matBadgeSize="small">
+          </span>
+        </ng-template>
+        
+        <div class="table-container">
+          <div *ngIf="filteredDeployments.length === 0 && !loading" class="empty-state">
+            <mat-icon>inbox</mat-icon>
+            <h3>No deployments found</h3>
+            <p>{{ searchControl.value ? 'Try adjusting your search criteria' : 'No deployments in this namespace' }}</p>
           </div>
-        </mat-tab>
-  
-        <mat-tab label="Services">
-          <div class="table-container">
-            <table mat-table [dataSource]="services" class="mat-elevation-z8">
-              <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
-                <td mat-cell *matCellDef="let element">{{ element.name }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="namespace">
-                <th mat-header-cell *matHeaderCellDef>Namespace</th>
-                <td mat-cell *matCellDef="let element">{{ element.namespace }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="type">
-                <th mat-header-cell *matHeaderCellDef>Type</th>
-                <td mat-cell *matCellDef="let element">{{ element.type }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="clusterIP">
-                <th mat-header-cell *matHeaderCellDef>Cluster IP</th>
-                <td mat-cell *matCellDef="let element">{{ element.clusterIP }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="ports">
-                <th mat-header-cell *matHeaderCellDef>Ports</th>
-                <td mat-cell *matCellDef="let element">{{ formatPorts(element.ports) }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="labels">
-                <th mat-header-cell *matHeaderCellDef>Labels</th>
-                <td mat-cell *matCellDef="let element">{{ formatLabels(element.labels) }}</td>
-              </ng-container>
-  
-              <tr mat-header-row *matHeaderRowDef="serviceColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: serviceColumns;"></tr>
-            </table>
+          
+          <table *ngIf="filteredDeployments.length > 0" mat-table [dataSource]="filteredDeployments" class="mat-elevation-z2">
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let element" class="status-cell">
+                <mat-icon [color]="getHealthColor(element.healthStatus)" 
+                          [matTooltip]="getHealthTooltip(element)"
+                          class="status-icon">
+                  {{ getHealthIcon(element.healthStatus) }}
+                </mat-icon>
+                <div class="health-bar">
+                  <div class="health-fill" 
+                       [style.width.%]="element.healthPercentage"
+                       [class]="'health-' + element.healthStatus">
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Name Column -->
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let element">
+                <strong>{{ element.name }}</strong>
+              </td>
+            </ng-container>
+
+            <!-- Namespace Column -->
+            <ng-container matColumnDef="namespace">
+              <th mat-header-cell *matHeaderCellDef>Namespace</th>
+              <td mat-cell *matCellDef="let element">{{ element.namespace }}</td>
+            </ng-container>
+
+            <!-- Replicas Column -->
+            <ng-container matColumnDef="replicas">
+              <th mat-header-cell *matHeaderCellDef>Desired</th>
+              <td mat-cell *matCellDef="let element">{{ element.replicas }}</td>
+            </ng-container>
+
+            <!-- Available Column -->
+            <ng-container matColumnDef="available">
+              <th mat-header-cell *matHeaderCellDef>Available</th>
+              <td mat-cell *matCellDef="let element" 
+                  [class]="element.availableReplicas !== element.replicas ? 'text-warning' : ''">
+                {{ element.availableReplicas }}
+              </td>
+            </ng-container>
+
+            <!-- Age Column -->
+            <ng-container matColumnDef="age">
+              <th mat-header-cell *matHeaderCellDef>Age</th>
+              <td mat-cell *matCellDef="let element" class="age-cell">
+                <mat-icon class="age-icon">schedule</mat-icon>
+                {{ element.age }}
+              </td>
+            </ng-container>
+
+            <!-- Labels Column -->
+            <ng-container matColumnDef="labels">
+              <th mat-header-cell *matHeaderCellDef>Labels</th>
+              <td mat-cell *matCellDef="let element" [matTooltip]="formatLabels(element.labels)">
+                {{ formatLabels(element.labels) }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="deploymentColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: deploymentColumns;" 
+                [class]="'row-' + row.healthStatus"></tr>
+          </table>
+        </div>
+      </mat-tab>
+
+      <!-- Services Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">settings_ethernet</mat-icon>
+          Services
+          <span class="resource-count" 
+                [matBadge]="filteredServices.length" 
+                matBadgeSize="small">
+          </span>
+        </ng-template>
+        
+        <div class="table-container">
+          <div *ngIf="filteredServices.length === 0 && !loading" class="empty-state">
+            <mat-icon>inbox</mat-icon>
+            <h3>No services found</h3>
+            <p>{{ searchControl.value ? 'Try adjusting your search criteria' : 'No services in this namespace' }}</p>
           </div>
-        </mat-tab>
-  
-        <mat-tab label="Ingresses">
-          <div class="table-container">
-            <table mat-table [dataSource]="ingresses" class="mat-elevation-z8">
-              <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
-                <td mat-cell *matCellDef="let element">{{ element.name }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="namespace">
-                <th mat-header-cell *matHeaderCellDef>Namespace</th>
-                <td mat-cell *matCellDef="let element">{{ element.namespace }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="hosts">
-                <th mat-header-cell *matHeaderCellDef>Hosts</th>
-                <td mat-cell *matCellDef="let element">{{ element.hosts.join(', ') }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="paths">
-                <th mat-header-cell *matHeaderCellDef>Paths</th>
-                <td mat-cell *matCellDef="let element">{{ element.paths.join(', ') }}</td>
-              </ng-container>
-  
-              <ng-container matColumnDef="annotations">
-                <th mat-header-cell *matHeaderCellDef>Annotations</th>
-                <td mat-cell *matCellDef="let element">{{ formatLabels(element.annotations) }}</td>
-              </ng-container>
-  
-              <tr mat-header-row *matHeaderRowDef="ingressColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: ingressColumns;"></tr>
-            </table>
+          
+          <table *ngIf="filteredServices.length > 0" mat-table [dataSource]="filteredServices" class="mat-elevation-z2">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let element">
+                <strong>{{ element.name }}</strong>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="namespace">
+              <th mat-header-cell *matHeaderCellDef>Namespace</th>
+              <td mat-cell *matCellDef="let element">{{ element.namespace }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="type">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let element">
+                <mat-chip class="service-type-chip">{{ element.type }}</mat-chip>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="clusterIP">
+              <th mat-header-cell *matHeaderCellDef>Cluster IP</th>
+              <td mat-cell *matCellDef="let element">{{ element.clusterIP }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="ports">
+              <th mat-header-cell *matHeaderCellDef>Ports</th>
+              <td mat-cell *matCellDef="let element">{{ formatPorts(element.ports) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="age">
+              <th mat-header-cell *matHeaderCellDef>Age</th>
+              <td mat-cell *matCellDef="let element" class="age-cell">
+                <mat-icon class="age-icon">schedule</mat-icon>
+                {{ element.age }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="labels">
+              <th mat-header-cell *matHeaderCellDef>Labels</th>
+              <td mat-cell *matCellDef="let element" [matTooltip]="formatLabels(element.labels)">
+                {{ formatLabels(element.labels) }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="serviceColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: serviceColumns;"></tr>
+          </table>
+        </div>
+      </mat-tab>
+
+      <!-- Ingresses Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">language</mat-icon>
+          Ingresses
+          <span class="resource-count" 
+                [matBadge]="filteredIngresses.length" 
+                matBadgeSize="small">
+          </span>
+        </ng-template>
+        
+        <div class="table-container">
+          <div *ngIf="filteredIngresses.length === 0 && !loading" class="empty-state">
+            <mat-icon>inbox</mat-icon>
+            <h3>No ingresses found</h3>
+            <p>{{ searchControl.value ? 'Try adjusting your search criteria' : 'No ingresses in this namespace' }}</p>
           </div>
-        </mat-tab>
-      </mat-tab-group>
-    </mat-card-content>
-  </mat-card>
+          
+          <table *ngIf="filteredIngresses.length > 0" mat-table [dataSource]="filteredIngresses" class="mat-elevation-z2">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let element">
+                <strong>{{ element.name }}</strong>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="namespace">
+              <th mat-header-cell *matHeaderCellDef>Namespace</th>
+              <td mat-cell *matCellDef="let element">{{ element.namespace }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="hosts">
+              <th mat-header-cell *matHeaderCellDef>Hosts</th>
+              <td mat-cell *matCellDef="let element">
+                <div class="hosts-container">
+                  <mat-chip *ngFor="let host of element.hosts" class="host-chip">
+                    {{ host }}
+                  </mat-chip>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="paths">
+              <th mat-header-cell *matHeaderCellDef>Paths</th>
+              <td mat-cell *matCellDef="let element">{{ element.paths.join(', ') }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="age">
+              <th mat-header-cell *matHeaderCellDef>Age</th>
+              <td mat-cell *matCellDef="let element" class="age-cell">
+                <mat-icon class="age-icon">schedule</mat-icon>
+                {{ element.age }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="annotations">
+              <th mat-header-cell *matHeaderCellDef>Annotations</th>
+              <td mat-cell *matCellDef="let element" [matTooltip]="formatLabels(element.annotations)">
+                {{ formatLabels(element.annotations) }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="ingressColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: ingressColumns;"></tr>
+          </table>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card-content>
+</mat-card>
