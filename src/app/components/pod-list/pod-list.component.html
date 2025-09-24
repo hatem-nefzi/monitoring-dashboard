@@ -88,12 +88,12 @@
           <div *ngIf="pod.metrics.cpu && pod.metrics.memory" class="metrics-display">
             <div class="metric-item">
               <mat-icon class="metric-icon">speed</mat-icon>
-              <span class="metric-value">{{pod.metrics.cpu}}</span>
+              <span class="metric-value">{{pod.metrics.cpu | cpuFormat}}</span>
               <span class="metric-label">CPU</span>
             </div>
             <div class="metric-item">
               <mat-icon class="metric-icon">memory</mat-icon>
-              <span class="metric-value">{{pod.metrics.memory}}</span>
+              <span class="metric-value">{{pod.metrics.memory | memoryFormat}}</span>
               <span class="metric-label">Memory</span>
             </div>
           </div>

@@ -12,6 +12,8 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PodLogDialogComponent } from '../pod-log-dialog/pod-log-dialog.component';
 import { PodInspectDialogComponent } from '../pod-inspect-dialog/pod-inspect-dialog.component';
 import { KubernetesService } from '../../services/kubernetes.service';
+import { CpuFormatPipe } from './cpu-format.pipe';
+import { MemoryFormatPipe } from './memory-format.pipe';
 
 @Component({
   selector: 'app-pod-list',
@@ -25,7 +27,9 @@ import { KubernetesService } from '../../services/kubernetes.service';
     MatIconModule,
     MatTooltipModule,
     MatButtonModule,
-    MatDialogModule
+    MatDialogModule,
+    CpuFormatPipe,
+    MemoryFormatPipe
   ],
   templateUrl: './pod-list.component.html',
   styleUrls: ['./pod-list.component.scss']

@@ -1,200 +1,224 @@
-// src/app/components/pod-list/pod-list.component.scss
 .pod-card {
-    margin: 16px;
-    padding: 24px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-    overflow-x: auto;
-  
-    mat-card-header {
-      padding-bottom: 16px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid #f0f0f0;
-  
-      .header-icon {
-        margin-right: 8px;
-        color: #3f51b5;
-      }
+  margin: 16px;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: #fafafa;
+  overflow-x: auto;
+
+  mat-card-header {
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #e0e0e0;
+
+    .header-icon {
+      margin-right: 8px;
+      color: #3f51b5;
     }
-  
-    .loading-spinner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 0;
-  
-      p {
-        margin-top: 16px;
-        color: #666;
-      }
+
+    mat-card-title {
+      font-size: 18px;
+      font-weight: 600;
     }
-  
-    .no-pods {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 0;
-      color: #666;
-  
-      mat-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
-      }
+
+    mat-card-subtitle {
+      font-size: 13px;
+      color: #777;
     }
-  
-    table.mat-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 12px;
-  
-      th.mat-header-cell {
-        font-weight: 600;
-        font-size: 14px;
-        color: #333;
-        padding: 12px 16px;
-        white-space: nowrap;
-      }
-  
-      td.mat-cell {
-        padding: 16px;
-        vertical-align: middle;
-        border-bottom: none;
-      }
-  
-      tr.mat-row {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        transition: all 0.2s ease;
-  
-        &:hover {
-          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .loading-spinner,
+  .no-pods {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 0;
+    color: #666;
+
+    mat-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      color: #9e9e9e;
+    }
+  }
+
+  table.mat-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+
+    th.mat-header-cell {
+      font-weight: 600;
+      font-size: 13px;
+      color: #444;
+      padding: 12px 16px;
+      white-space: nowrap;
+      background: #f5f5f5;
+    }
+
+    td.mat-cell {
+      padding: 14px 16px;
+      vertical-align: middle;
+      border-bottom: none;
+      font-size: 14px;
+    }
+
+    tr.mat-row {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+
+        .row-actions {
+          opacity: 1;
         }
-      }
-    }
-  
-    // Column-specific styles
-    .mat-column-name {
-      min-width: 200px;
-  
-      .pod-name {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-  
-        .pod-icon {
-          color: #2196f3;
-        }
-      }
-    }
-  
-    .mat-column-namespace {
-      min-width: 120px;
-  
-      .namespace-chip {
-        background: #610070;
-        color: #7b1fa2;
-        padding: 4px 10px;
-        border-radius: 16px;
-        font-size: 12px;
-      }
-    }
-  
-    .mat-column-status {
-      min-width: 140px;
-  
-      mat-chip {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-  
-        .status-icon {
-          font-size: 18px;
-        }
-      }
-    }
-  
-    .mat-column-node {
-      min-width: 150px;
-  
-      .node-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-  
-        mat-icon {
-          color: #4caf50;
-        }
-      }
-    }
-  
-    .mat-column-containers {
-      min-width: 180px;
-  
-      .containers-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-  
-        .container-chip {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 10px;
-          font-size: 12px;
-  
-          .container-icon {
-            font-size: 16px;
-          }
-        }
-      }
-    }
-  
-    .mat-column-metrics {
-      min-width: 160px;
-  
-      .metrics-display {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-  
-        .metric-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-  
-          .metric-icon {
-            color: #009688;
-            font-size: 18px;
-          }
-  
-          .metric-value {
-            font-weight: 500;
-            min-width: 40px;
-          }
-  
-          .metric-label {
-            color: #666;
-            font-size: 12px;
-          }
-        }
-      }
-  
-      .metrics-error {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: #f44336;
-        font-size: 12px;
-      }
-    }
-  
-    .mat-column-actions {
-      min-width: 100px;
-  
-      button {
-        margin: 0 4px;
       }
     }
   }
+
+  // Column styles
+  .mat-column-name {
+    min-width: 200px;
+
+    .pod-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .pod-icon {
+        color: #2196f3;
+      }
+    }
+  }
+
+  .mat-column-namespace {
+    min-width: 120px;
+
+    .namespace-chip {
+      background: #5501d3; // soft purple background
+      color: #4a148c;      // strong purple text
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+  }
+
+  .mat-column-status {
+    min-width: 140px;
+
+    mat-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 500;
+
+      .status-icon {
+        font-size: 18px;
+      }
+    }
+  }
+
+  .mat-column-node {
+    min-width: 150px;
+
+    .node-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      mat-icon {
+        color: #4caf50;
+      }
+    }
+  }
+
+  .mat-column-containers {
+  min-width: 180px;
+
+  .containers-list {
+    display: flex;
+    flex-direction: column;   // vertical stacking
+    gap: 6px;                 // spacing between chips
+
+    .container-chip, .container-chip.mat-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 12px;
+      width: fit-content;     // chips adjust to content width
+      max-width: 100%;        // don’t overflow table cell
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      .container-icon {
+        font-size: 16px;
+        color: #607d8b;       // subtle neutral icon
+      }
+    }
+  }
+}
+
+
+  .mat-column-metrics {
+    min-width: 160px;
+
+    .metrics-display {
+      display: flex;
+      flex-direction: column; // 👈 stack vertically
+      gap: 8px;
+
+      .metric-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .metric-icon {
+          color: #009688;
+          font-size: 16px;
+        }
+
+        .metric-value {
+          font-weight: 600;
+          font-size: 13px;
+        }
+
+        .metric-label {
+          color: #888;
+          font-size: 11px;
+        }
+      }
+    }
+
+    .metrics-error {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #f44336;
+      font-size: 12px;
+    }
+  }
+
+  .mat-column-actions {
+    min-width: 100px;
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+
+      button {
+        border-radius: 8px;
+      }
+    }
+  }
+}
