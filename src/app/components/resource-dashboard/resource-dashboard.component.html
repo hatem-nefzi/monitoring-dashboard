@@ -292,4 +292,26 @@
       </mat-tab>
     </mat-tab-group>
   </mat-card-content>
+  <!-- Add this after <mat-card-content> -->
+<div class="pro-features-bar">
+  <!-- Health Score -->
+  <div class="health-score" [class]="getOverallHealth().status">
+    <mat-icon>monitor_heart</mat-icon>
+    Overall Health: {{ getOverallHealth().score }}%
+  </div>
+
+  <!-- Quick Filters -->
+  <div class="quick-filters">
+    <button mat-stroked-button (click)="toggleCriticalOnly()" 
+            [class.active]="quickFilters.criticalOnly">
+      <mat-icon>warning</mat-icon>
+      Critical Only ({{ getCriticalDeployments().length }})
+    </button>
+    
+    <button mat-stroked-button (click)="exportToCSV()">
+      <mat-icon>download</mat-icon>
+      Export CSV
+    </button>
+  </div>
+</div>
 </mat-card>

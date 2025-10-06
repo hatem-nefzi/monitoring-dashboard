@@ -261,21 +261,7 @@ export class ResourceDashboardComponent implements OnInit, OnDestroy {
   }
 }
 
-  applyFilters(): void {
-    const searchTerm = this.searchControl.value?.toLowerCase() || '';
-    
-    this.filteredDeployments = this.deployments.filter(deployment => 
-      this.matchesSearch(deployment, searchTerm)
-    );
-    
-    this.filteredServices = this.services.filter(service => 
-      this.matchesSearch(service, searchTerm)
-    );
-    
-    this.filteredIngresses = this.ingresses.filter(ingress => 
-      this.matchesSearch(ingress, searchTerm)
-    );
-  }
+  
 
   private matchesSearch(resource: any, searchTerm: string): boolean {
     if (!searchTerm) return true;
@@ -377,4 +363,76 @@ export class ResourceDashboardComponent implements OnInit, OnDestroy {
   getHealthTooltip(deployment: EnhancedDeploymentInfo): string {
     return `${deployment.availableReplicas}/${deployment.replicas} replicas available (${deployment.healthPercentage}%)`;
   }
+  // Add these properties to your component class
+quickFilters = {
+  criticalOnly: false
+};
+
+// Add these methods to your component class
+getOverallHealth(): { score: number; status: string } {
+  if (this.deployments.length === 0) return { score: 100, status: 'healthy' };
+  
+  const healthyCount = this.deployments.filter(d => d.healthStatus === 'healthy').length;
+  const score = Math.round((healthyCount / this.deployments.length) * 100);
+  
+  return {
+    score,
+    status: score >= 90 ? 'healthy' : score >= 70 ? 'warning' : 'critical'
+  };
+}
+
+getCriticalDeployments(): EnhancedDeploymentInfo[] {
+  return this.deployments.filter(d => d.healthStatus === 'critical');
+}
+
+toggleCriticalOnly(): void {
+  this.quickFilters.criticalOnly = !this.quickFilters.criticalOnly;
+  this.applyFilters();
+}
+
+exportToCSV(): void {
+  const data = this.getCurrentTabData();
+  const headers = Object.keys(data[0] || {}).join(',');
+  const csvContent = data.map(row => 
+    Object.values(row).map(field => `"${field}"`).join(',')
+  ).join('\n');
+  
+  const blob = new Blob([headers + '\n' + csvContent], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `k8s-export-${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+}
+
+getCurrentTabData(): any[] {
+  switch (this.selectedTab.value) {
+    case 0: return this.filteredDeployments;
+    case 1: return this.filteredServices;
+    case 2: return this.filteredIngresses;
+    default: return [];
+  }
+}
+
+// Update your applyFilters method to include quick filters
+applyFilters(): void {
+  const searchTerm = this.searchControl.value?.toLowerCase() || '';
+  
+  let deployments = this.deployments.filter(deployment => 
+    this.matchesSearch(deployment, searchTerm)
+  );
+  
+  // Apply quick filters
+  if (this.quickFilters.criticalOnly) {
+    deployments = deployments.filter(d => d.healthStatus === 'critical');
+  }
+  
+  this.filteredDeployments = deployments;
+  this.filteredServices = this.services.filter(service => 
+    this.matchesSearch(service, searchTerm)
+  );
+  this.filteredIngresses = this.ingresses.filter(ingress => 
+    this.matchesSearch(ingress, searchTerm)
+  );
+}
 }
