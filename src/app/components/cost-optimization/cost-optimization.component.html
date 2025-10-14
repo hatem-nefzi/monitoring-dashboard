@@ -1,0 +1,402 @@
+<!-- src/app/components/cost-optimization/cost-optimization.component.html -->
+<div class="cost-optimization-container">
+  <!-- Toast Notification -->
+  <div class="toast" [class.show]="showToast" [class.success]="toastType === 'success'" [class.error]="toastType === 'error'">
+    <span class="toast-icon">{{ toastType === 'success' ? '✓' : '⚠️' }}</span>
+    <span class="toast-message">{{ toastMessage }}</span>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <h1>💰 Cost Optimization</h1>
+      <p class="subtitle">Monitor and optimize your Kubernetes cluster costs</p>
+    </div>
+    <button class="refresh-btn" (click)="loadData()" [disabled]="loading">
+      <span class="icon">🔄</span>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading cost analysis...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-state">
+    <span class="icon">⚠️</span>
+    <p>{{ error }}</p>
+    <button (click)="loadData()">Retry</button>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading && !error">
+    <!-- Overview View -->
+    <div *ngIf="selectedView === 'overview' && clusterSummary" class="overview-view">
+      <!-- Summary Cards -->
+      <div class="summary-grid">
+        <div class="summary-card primary">
+          <div class="card-icon">💵</div>
+          <div class="card-content">
+            <h3>Total Monthly Cost</h3>
+            <div class="cost-value">${{ formatCost(clusterSummary.totalMonthlyCost) }}</div>
+            <p class="card-subtitle">Across {{ clusterSummary.totalPods }} pods</p>
+          </div>
+        </div>
+
+        <div class="summary-card success">
+          <div class="card-icon">💚</div>
+          <div class="card-content">
+            <h3>Potential Savings</h3>
+            <div class="cost-value">${{ formatCost(clusterSummary.potentialSavings) }}</div>
+            <p class="card-subtitle">{{ formatPercent((clusterSummary.potentialSavings / clusterSummary.totalMonthlyCost) * 100) }}% reduction possible</p>
+          </div>
+        </div>
+
+        <div class="summary-card info">
+          <div class="card-icon">📊</div>
+          <div class="card-content">
+            <h3>Efficiency Score</h3>
+            <div class="efficiency-value">
+              <span [style.color]="getEfficiencyColor(clusterSummary.averageEfficiencyScore)">
+                {{ formatPercent(clusterSummary.averageEfficiencyScore) }}%
+              </span>
+            </div>
+            <p class="card-subtitle">Cluster average</p>
+          </div>
+        </div>
+
+        <div class="summary-card warning">
+          <div class="card-icon">⚡</div>
+          <div class="card-content">
+            <h3>Resource Status</h3>
+            <div class="status-breakdown">
+              <span class="status-item efficient" title="Efficient pods">✓ {{ clusterSummary.efficientPods }}</span>
+              <span class="status-item over" title="Over-provisioned pods">📊 {{ clusterSummary.overProvisionedPods }}</span>
+              <span class="status-item under" 
+                    title="Under-provisioned pods - needs attention!"
+                    *ngIf="getUnderProvisionedCount() > 0">
+                ⚠️ {{ getUnderProvisionedCount() }}
+              </span>
+            </div>
+            <p class="card-subtitle">
+              <span *ngIf="getUnderProvisionedCount() > 0" class="alert-text">
+                {{ getUnderProvisionedCount() }} pod(s) need more resources!
+              </span>
+              <span *ngIf="getUnderProvisionedCount() === 0">
+                Efficient / Over-provisioned
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Insights -->
+      <div class="insights-section">
+        <h2>🔍 Key Insights</h2>
+        <div class="insights-grid">
+          <div class="insight-card">
+            <div class="insight-header">
+              <span class="insight-icon">🏆</span>
+              <h3>Most Expensive Namespace</h3>
+            </div>
+            <div class="insight-value">{{ clusterSummary.mostExpensiveNamespace }}</div>
+            <p class="insight-detail">
+              ${{ formatCost(clusterSummary.costByNamespace[clusterSummary.mostExpensiveNamespace]) }}/month
+            </p>
+            <button class="insight-action" (click)="selectNamespace(clusterSummary.mostExpensiveNamespace)">
+              View Details →
+            </button>
+          </div>
+
+          <div class="insight-card" *ngIf="clusterSummary.leastEfficientNamespace">
+            <div class="insight-header">
+              <span class="insight-icon">⚠️</span>
+              <h3>Least Efficient Namespace</h3>
+            </div>
+            <div class="insight-value">{{ clusterSummary.leastEfficientNamespace }}</div>
+            <p class="insight-detail">Needs optimization attention</p>
+            <button class="insight-action" (click)="selectNamespace(clusterSummary.leastEfficientNamespace)">
+              View Details →
+            </button>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-header">
+              <span class="insight-icon">💎</span>
+              <h3>Waste Analysis</h3>
+            </div>
+            <div class="insight-value">${{ formatCost(clusterSummary.totalWastedCost) }}</div>
+            <p class="insight-detail">
+              {{ formatPercent((clusterSummary.totalWastedCost / clusterSummary.totalMonthlyCost) * 100) }}% of total spend
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cost by Namespace -->
+      <div class="namespace-costs-section">
+        <h2>📦 Top Namespaces by Cost</h2>
+        <div class="namespace-list">
+          <div *ngFor="let item of topNamespacesByCost" 
+               class="namespace-item"
+               (click)="selectNamespace(item.namespace)">
+            <div class="namespace-info">
+              <span class="namespace-name">{{ item.namespace }}</span>
+              <span class="namespace-cost">${{ formatCost(item.cost) }}/month</span>
+            </div>
+            <div class="namespace-bar">
+              <div class="namespace-bar-fill" 
+                   [style.width.%]="(item.cost / clusterSummary.totalMonthlyCost) * 100">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="all-namespaces">
+          <h3>All Namespaces</h3>
+          <div class="namespace-grid">
+            <button *ngFor="let ns of namespaces" 
+                    class="namespace-chip"
+                    (click)="selectNamespace(ns)">
+              {{ ns }}
+              <span class="chip-cost" *ngIf="clusterSummary.costByNamespace[ns]">
+                ${{ formatCost(clusterSummary.costByNamespace[ns]) }}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Namespace Detail View -->
+    <div *ngIf="selectedView === 'namespace' && namespaceAnalysis" class="namespace-view">
+      <!-- Back Button -->
+      <button class="back-btn" (click)="backToOverview()">
+        ← Back to Overview
+      </button>
+
+      <!-- Namespace Header -->
+      <div class="namespace-header">
+        <h2>📦 {{ namespaceAnalysis.namespace }}</h2>
+        <div class="namespace-metrics">
+          <div class="metric">
+            <span class="metric-label">Monthly Cost</span>
+            <span class="metric-value">${{ formatCost(namespaceAnalysis.monthlyCost) }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Efficiency</span>
+            <span class="metric-value" [style.color]="getEfficiencyColor(namespaceAnalysis.efficiencyScore)">
+              {{ formatPercent(namespaceAnalysis.efficiencyScore) }}%
+            </span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Pods</span>
+            <span class="metric-value">{{ namespaceAnalysis.totalPods }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resources Summary -->
+      <div class="resources-summary">
+        <div class="resource-card">
+          <span class="resource-icon">⚙️</span>
+          <div>
+            <div class="resource-label">CPU Cores</div>
+            <div class="resource-value">{{ formatPercent(namespaceAnalysis.totalCpuCores) }}</div>
+          </div>
+        </div>
+        <div class="resource-card">
+          <span class="resource-icon">💾</span>
+          <div>
+            <div class="resource-label">Memory</div>
+            <div class="resource-value">{{ formatPercent(namespaceAnalysis.totalMemoryGb) }} GB</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations Section -->
+      <div class="recommendations-section">
+        <div class="section-header">
+          <h3>💡 Cost Optimization Recommendations</h3>
+          <div class="filters">
+            <select [(ngModel)]="priorityFilter" class="filter-select">
+              <option value="all">All Priorities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <input type="text" 
+                   [(ngModel)]="searchTerm" 
+                   placeholder="Search pods..."
+                   class="search-input">
+          </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div class="bulk-actions-bar" *ngIf="filteredRecommendations.length > 0">
+          <div class="bulk-info">
+            <span class="bulk-count">{{ filteredRecommendations.length }} recommendation(s)</span>
+            <span class="bulk-savings">💰 Total potential savings: ${{ formatCost(getTotalSavings()) }}/month</span>
+          </div>
+          <div class="bulk-buttons">
+            <button class="bulk-btn" (click)="copyToClipboard(generateBulkCommands(), 'All commands')">
+              📋 Copy All Commands
+            </button>
+            <button class="bulk-btn secondary" (click)="downloadAsFile(generateBulkCommands(), 'kubectl-commands.sh')">
+              💾 Download Script
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredRecommendations.length === 0" class="empty-state">
+          <span class="icon">🎉</span>
+          <p>No recommendations found. Your resources are optimally configured!</p>
+        </div>
+
+        <div class="recommendations-list">
+          <div *ngFor="let rec of filteredRecommendations" 
+               class="recommendation-card"
+               [class.critical]="rec.priority === 'critical'"
+               [class.high]="rec.priority === 'high'">
+            <div class="rec-header">
+              <div class="rec-priority" [style.background-color]="getPriorityColor(rec.priority)">
+                {{ getPriorityIcon(rec.priority) }} {{ rec.priority | uppercase }}
+              </div>
+              <div class="rec-savings" *ngIf="rec.potentialSavings > 0">
+                💰 Save ${{ formatCost(rec.potentialSavings) }}/month
+              </div>
+            </div>
+
+            <h4 class="rec-pod-name">{{ rec.podName }}</h4>
+            <p class="rec-reason">{{ rec.reason }}</p>
+
+            <div class="rec-change">
+              <div class="rec-change-item">
+                <span class="label">Current</span>
+                <div class="value current">{{ rec.currentConfig }}</div>
+              </div>
+              <span class="arrow">→</span>
+              <div class="rec-change-item">
+                <span class="label">Recommended</span>
+                <div class="value recommended">{{ rec.recommendedConfig }}</div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="rec-actions">
+              <button class="action-btn primary" (click)="copyToClipboard(generateKubectlCommand(rec), 'kubectl command')">
+                <span class="btn-icon">📋</span>
+                Copy kubectl Command
+              </button>
+              <button class="action-btn secondary" (click)="copyToClipboard(generateYamlPatch(rec), 'YAML patch')">
+                <span class="btn-icon">📄</span>
+                Copy YAML
+              </button>
+              <button class="action-btn tertiary" (click)="copyToClipboard(generateFullKubectlCommand(rec.podName), 'Full command')">
+                <span class="btn-icon">⚡</span>
+                All Resources
+              </button>
+            </div>
+
+            <!-- Command Preview (Collapsible) -->
+            <details class="command-preview">
+              <summary>👁️ Preview Command</summary>
+              <pre class="command-code">{{ generateKubectlCommand(rec) }}</pre>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pod Costs Table -->
+      <div class="pod-costs-section">
+        <div class="section-header">
+          <h3>📊 Pod Resource Analysis</h3>
+          <div class="filters">
+            <select [(ngModel)]="statusFilter" class="filter-select">
+              <option value="all">All Statuses</option>
+              <option value="efficient">Efficient</option>
+              <option value="over-provisioned">Over-provisioned</option>
+              <option value="under-provisioned">Under-provisioned</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="pod-costs-table">
+            <thead>
+              <tr>
+                <th>Pod / Deployment</th>
+                <th>Status</th>
+                <th>CPU Usage</th>
+                <th>Memory Usage</th>
+                <th>Monthly Cost</th>
+                <th>Wasted</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pod of filteredPodCosts">
+                <td>
+                  <div class="pod-name-cell">
+                    <div class="pod-name">{{ pod.podName }}</div>
+                    <div class="deployment-name">{{ pod.deploymentName }}</div>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge" [style.background-color]="getStatusColor(pod.status)">
+                    {{ getStatusLabel(pod.status) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="usage-cell">
+                    <div class="usage-header">
+                      <span class="usage-text">
+                        {{ formatResource(pod.cpuUsage, 'cpu') }} / {{ formatResource(pod.cpuRequest, 'cpu') }}
+                      </span>
+                      <span class="usage-percent" 
+                            [class.usage-high]="getUsagePercent(pod.cpuUsage, pod.cpuRequest) > 85"
+                            [class.usage-low]="getUsagePercent(pod.cpuUsage, pod.cpuRequest) < 50">
+                        {{ formatPercent(getUsagePercent(pod.cpuUsage, pod.cpuRequest)) }}%
+                      </span>
+                    </div>
+                    <div class="usage-bar">
+                      <div class="usage-bar-fill" 
+                           [style.width.%]="getUsagePercent(pod.cpuUsage, pod.cpuRequest)"
+                           [style.background-color]="getUsageBarColor(pod.cpuUsage, pod.cpuRequest)">
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="usage-cell">
+                    <div class="usage-header">
+                      <span class="usage-text">
+                        {{ formatResource(pod.memoryUsage, 'memory') }} / {{ formatResource(pod.memoryRequest, 'memory') }}
+                      </span>
+                      <span class="usage-percent"
+                            [class.usage-high]="getUsagePercent(pod.memoryUsage, pod.memoryRequest) > 85"
+                            [class.usage-low]="getUsagePercent(pod.memoryUsage, pod.memoryRequest) < 60">
+                        {{ formatPercent(getUsagePercent(pod.memoryUsage, pod.memoryRequest)) }}%
+                      </span>
+                    </div>
+                    <div class="usage-bar">
+                      <div class="usage-bar-fill" 
+                           [style.width.%]="getUsagePercent(pod.memoryUsage, pod.memoryRequest)"
+                           [style.background-color]="getUsageBarColor(pod.memoryUsage, pod.memoryRequest)">
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="cost-cell">${{ formatCost(pod.monthlyCost) }}</td>
+                <td class="wasted-cell">${{ formatCost(pod.wastedCost) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
