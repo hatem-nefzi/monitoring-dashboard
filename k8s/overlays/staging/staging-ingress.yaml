@@ -4,9 +4,9 @@ metadata:
   name: monitoring-frontend-ingress
   namespace: staging
   annotations:
-    kubernetes.io/ingress.class: "nginx"
+    kubernetes.io/ingress.class: "traefik"
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
   - host: monitoring-frontend-staging.local
     http:

@@ -8,7 +8,7 @@ include:
 
 # Checkout job
 checkout:
-  extends: .default_job  # This comes from backend common.yml
+  extends: .default_job  # This comes from backend common.yml..
   stage: checkout
   script:
     - echo "Checking out Angular project ${APP_NAME}"
@@ -37,7 +37,6 @@ build:
       - dist/
       - package.json
       - package-lock.json
-      - node_modules/
     reports:
       dotenv: build.env
     expire_in: 2 hours

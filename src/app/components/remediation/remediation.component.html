@@ -1,0 +1,278 @@
+<div class="remediation-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>🧠 Auto-Remediation Engine</h1>
+      <p class="subtitle">Automated issue detection and resolution</p>
+    </div>
+    <div class="header-right">
+      <button 
+        class="btn btn-primary" 
+        (click)="toggleAutoRefresh()"
+        [class.active]="autoRefresh">
+        {{ autoRefresh ? '⏸️ Pause' : '▶️ Resume' }} Auto-Refresh
+      </button>
+      <button class="btn btn-secondary" (click)="refresh()">
+        🔄 Refresh Now
+      </button>
+      <button class="btn btn-success" (click)="triggerScan()">
+        🚀 Trigger Scan
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.totalActions }}</div>
+        <div class="stat-label">Total Actions</div>
+      </div>
+    </div>
+
+    <div class="stat-card success">
+      <div class="stat-icon">✅</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.successfulActions }}</div>
+        <div class="stat-label">Successful</div>
+      </div>
+    </div>
+
+    <div class="stat-card danger">
+      <div class="stat-icon">❌</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.failedActions }}</div>
+        <div class="stat-label">Failed</div>
+      </div>
+    </div>
+
+    <div class="stat-card info">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ successRate }}%</div>
+        <div class="stat-label">Success Rate</div>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active]="policy?.enabled" [class.inactive]="!policy?.enabled">
+      <div class="stat-icon">{{ policy?.enabled ? '🟢' : '🔴' }}</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ policy?.enabled ? 'Active' : 'Disabled' }}</div>
+        <div class="stat-label">Engine Status</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.trackedPods }}</div>
+        <div class="stat-label">Tracked Pods</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Policy Controls -->
+  <div class="policy-section" *ngIf="policy">
+    <div class="section-header">
+      <h2>⚙️ Policy Configuration</h2>
+      <button class="btn btn-sm btn-success" (click)="savePolicy()">
+        💾 Save Policy
+      </button>
+    </div>
+
+    <div class="policy-grid">
+      <div class="policy-item">
+        <label class="toggle-switch">
+          <input type="checkbox" [(ngModel)]="policy.enabled" (change)="toggleRemediation()">
+          <span class="slider"></span>
+        </label>
+        <div class="policy-info">
+          <div class="policy-title">Enable Auto-Remediation</div>
+          <div class="policy-desc">Master switch for automated fixes</div>
+        </div>
+      </div>
+
+      <div class="policy-item">
+        <label class="toggle-switch">
+          <input type="checkbox" [(ngModel)]="policy.autoRestartCrashingPods">
+          <span class="slider"></span>
+        </label>
+        <div class="policy-info">
+          <div class="policy-title">Auto-Restart Crashing Pods</div>
+          <div class="policy-desc">Delete pods in CrashLoopBackOff</div>
+        </div>
+      </div>
+
+      <div class="policy-item">
+        <label class="toggle-switch">
+          <input type="checkbox" [(ngModel)]="policy.autoDeleteFailedPods">
+          <span class="slider"></span>
+        </label>
+        <div class="policy-info">
+          <div class="policy-title">Auto-Delete Failed Pods</div>
+          <div class="policy-desc">Clean up old failed pods</div>
+        </div>
+      </div>
+
+      <div class="policy-item">
+        <div class="input-group">
+          <label>Max Restart Attempts</label>
+          <input type="number" [(ngModel)]="policy.maxRestartAttempts" min="1" max="10">
+        </div>
+        <div class="policy-desc">Prevent infinite restart loops</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="search-box">
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        placeholder="🔍 Search by pod name, namespace, or issue..."
+        class="search-input">
+    </div>
+
+    <div class="filter-controls">
+      <select [(ngModel)]="filterStatus" class="filter-select">
+        <option value="all">All Statuses</option>
+        <option value="SUCCESS">✅ Success</option>
+        <option value="FAILED">❌ Failed</option>
+        <option value="SKIPPED">⚠️ Skipped</option>
+        <option value="IN_PROGRESS">🔄 In Progress</option>
+      </select>
+
+      <select [(ngModel)]="filterIssue" class="filter-select">
+        <option value="all">All Issues</option>
+        <option *ngFor="let issue of issueTypes" [value]="issue">{{ issue }}</option>
+      </select>
+
+      <div class="result-count">
+        Showing {{ filteredActions.length }} of {{ actions.length }} actions
+      </div>
+    </div>
+  </div>
+
+  <!-- History Table -->
+  <div class="history-section">
+    <h2>📜 Remediation History</h2>
+
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading remediation history...</p>
+    </div>
+
+    <div *ngIf="error" class="error-state">
+      <p>{{ error }}</p>
+      <button class="btn btn-primary" (click)="refresh()">Retry</button>
+    </div>
+
+    <div *ngIf="!loading && !error && filteredActions.length === 0" class="empty-state">
+      <div class="empty-icon">📭</div>
+      <h3>No actions found</h3>
+      <p>No remediation actions match your filters</p>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && !error && filteredActions.length > 0">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Pod / Namespace</th>
+            <th>Issue</th>
+            <th>Action</th>
+            <th>Status</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let action of filteredActions" (click)="viewDetails(action)" class="table-row">
+            <td class="time-cell">{{ formatTime(action.timestamp) }}</td>
+            <td class="pod-cell">
+              <div class="pod-name">{{ action.podName }}</div>
+              <div class="namespace-badge">{{ action.namespace }}</div>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="getIssueClass(action.issue)">
+                {{ action.issue }}
+              </span>
+            </td>
+            <td class="action-cell">{{ action.action }}</td>
+            <td>
+              <span class="badge" [ngClass]="getStatusClass(action.status)">
+                {{ action.status }}
+              </span>
+            </td>
+            <td>
+              <button class="btn-icon" (click)="viewDetails(action); $event.stopPropagation()">
+                👁️
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Details Modal -->
+  <div class="modal-overlay" *ngIf="selectedAction" (click)="closeDetails()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Action Details</h3>
+        <button class="close-btn" (click)="closeDetails()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-row">
+          <strong>Pod:</strong>
+          <span>{{ selectedAction.podName }}</span>
+        </div>
+        <div class="detail-row">
+          <strong>Namespace:</strong>
+          <span>{{ selectedAction.namespace }}</span>
+        </div>
+        <div class="detail-row">
+          <strong>Issue:</strong>
+          <span class="badge" [ngClass]="getIssueClass(selectedAction.issue)">
+            {{ selectedAction.issue }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <strong>Action Taken:</strong>
+          <span>{{ selectedAction.action }}</span>
+        </div>
+        <div class="detail-row">
+          <strong>Status:</strong>
+          <span class="badge" [ngClass]="getStatusClass(selectedAction.status)">
+            {{ selectedAction.status }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <strong>Timestamp:</strong>
+          <span>{{ selectedAction.timestamp }}</span>
+        </div>
+        <div class="detail-row">
+          <strong>Reason:</strong>
+          <span>{{ selectedAction.reason }}</span>
+        </div>
+
+        <div *ngIf="selectedAction.metadata" class="metadata-section">
+          <strong>Metadata:</strong>
+          <div class="metadata-grid">
+            <div *ngFor="let item of selectedAction.metadata | keyvalue" class="metadata-item">
+              <span class="metadata-key">{{ item.key }}:</span>
+              <span class="metadata-value">{{ item.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="selectedAction.error" class="error-section">
+          <strong>Error:</strong>
+          <pre>{{ selectedAction.error }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

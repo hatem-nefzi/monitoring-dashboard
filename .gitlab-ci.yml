@@ -6,5 +6,6 @@ include:
   - local: 'ci-templates/templates/platforms/k3s-production.yml'
   - local: 'ci-templates/templates/core/.gitlab-ci-security-scanning.yaml'
 
+#trying the new runner and the new vm (my vm now)
 variables:
   APP_NAME: "monitoring-frontend"
