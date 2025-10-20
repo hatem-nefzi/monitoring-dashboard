@@ -1,9 +1,13 @@
 // src/app/components/cost-optimization/cost-optimization.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CostService, ClusterCostSummary, CostAnalysis, CostRecommendation, ResourceCost } from '../../services/cost/cost.service';
+import { CostService, ClusterCostSummary, CostAnalysis, CostRecommendation, ResourceCost, CostSnapshot, SavingsData } from '../../services/cost/cost.service';
 import { KubernetesService } from '../../services/kubernetes.service';
+import { Chart, registerables } from 'chart.js';
+
+// Register Chart.js components
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-cost-optimization',
@@ -12,17 +16,27 @@ import { KubernetesService } from '../../services/kubernetes.service';
   templateUrl: './cost-optimization.component.html',
   styleUrls: ['./cost-optimization.component.scss']
 })
-export class CostOptimizationComponent implements OnInit {
+export class CostOptimizationComponent implements OnInit, AfterViewInit {
+  @ViewChild('costChart') costChartCanvas?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('efficiencyChart') efficiencyChartCanvas?: ElementRef<HTMLCanvasElement>;
+
   // State
   loading = true;
   error: string | null = null;
-  selectedView: 'overview' | 'namespace' = 'overview';
+  selectedView: 'overview' | 'namespace' | 'timeline' = 'overview';
   selectedNamespace: string | null = null;
   
   // Data
   clusterSummary: ClusterCostSummary | null = null;
   namespaceAnalysis: CostAnalysis | null = null;
   namespaces: string[] = [];
+  
+  // Timeline data
+  costHistory: CostSnapshot[] = [];
+  savingsData: SavingsData | null = null;
+  timelineDays = 30;
+  costChart: Chart | null = null;
+  efficiencyChart: Chart | null = null;
   
   // Filters
   statusFilter: 'all' | 'efficient' | 'over-provisioned' | 'under-provisioned' = 'all';
@@ -43,6 +57,10 @@ export class CostOptimizationComponent implements OnInit {
     this.loadData();
   }
 
+  ngAfterViewInit(): void {
+    // Charts will be created when timeline data loads
+  }
+
   async loadData(): Promise<void> {
     this.loading = true;
     this.error = null;
@@ -59,6 +77,8 @@ export class CostOptimizationComponent implements OnInit {
       // If we're in namespace view, reload that namespace
       if (this.selectedView === 'namespace' && this.selectedNamespace) {
         this.loadNamespaceAnalysis(this.selectedNamespace);
+      } else if (this.selectedView === 'timeline' && this.selectedNamespace) {
+        this.loadTimelineData(this.selectedNamespace);
       } else {
         // Load cluster summary for overview
         this.costService.getClusterCostSummary().subscribe({
@@ -99,14 +119,211 @@ export class CostOptimizationComponent implements OnInit {
     this.selectedNamespace = namespace;
     this.selectedView = 'namespace';
     this.loading = true;
-
     this.loadNamespaceAnalysis(namespace);
+  }
+
+  viewTimeline(namespace: string): void {
+    this.selectedNamespace = namespace;
+    this.selectedView = 'timeline';
+    this.loading = true;
+    this.loadTimelineData(namespace);
+  }
+
+  loadTimelineData(namespace: string): void {
+    // Load cost history
+    this.costService.getCostHistory(namespace, this.timelineDays).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.costHistory = response.history;
+          
+          // Load savings data
+          this.costService.getSavings(namespace).subscribe({
+            next: (savingsResponse) => {
+              if (savingsResponse.success) {
+                this.savingsData = savingsResponse.savings;
+              }
+              
+              // Load current analysis
+              this.loadNamespaceAnalysis(namespace);
+              
+              // Create charts after a small delay to ensure DOM is ready
+              setTimeout(() => {
+                this.createCharts();
+                this.loading = false;
+              }, 200);
+            },
+            error: (err) => {
+              console.error('Failed to load savings:', err);
+              this.loading = false;
+            }
+          });
+        } else {
+          this.loading = false;
+        }
+      },
+      error: (err) => {
+        this.error = 'Failed to load timeline data: ' + err.message;
+        this.loading = false;
+      }
+    });
+  }
+
+  createSnapshot(): void {
+    if (!this.selectedNamespace) return;
+    
+    this.showToastNotification('Creating snapshot...', 'success');
+    
+    this.costService.createSnapshot(this.selectedNamespace).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.showToastNotification('Snapshot created successfully!', 'success');
+          // Reload timeline data
+          this.loadTimelineData(this.selectedNamespace!);
+        }
+      },
+      error: (err) => {
+        this.showToastNotification('Failed to create snapshot', 'error');
+        console.error('Snapshot error:', err);
+      }
+    });
+  }
+
+  private createCharts(): void {
+    if (this.costHistory.length === 0) {
+      console.log('No history data to chart');
+      return;
+    }
+    
+    // Destroy existing charts
+    if (this.costChart) {
+      this.costChart.destroy();
+      this.costChart = null;
+    }
+    if (this.efficiencyChart) {
+      this.efficiencyChart.destroy();
+      this.efficiencyChart = null;
+    }
+
+    // Cost Timeline Chart
+    if (this.costChartCanvas && this.costChartCanvas.nativeElement) {
+      const ctx = this.costChartCanvas.nativeElement.getContext('2d');
+      if (ctx) {
+        this.costChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: this.costHistory.map(s => new Date(s.timestamp).toLocaleDateString()),
+            datasets: [{
+              label: 'Monthly Cost ($)',
+              data: this.costHistory.map(s => s.totalMonthlyCost),
+              borderColor: '#667eea',
+              backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              tension: 0.4,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top'
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: (context) => {
+                    return `Cost: $${context.parsed.y !== null && context.parsed.y !== undefined ? context.parsed.y.toFixed(2) : 'N/A'}/month`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: (value) => '$' + value
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Efficiency Timeline Chart
+    if (this.efficiencyChartCanvas && this.efficiencyChartCanvas.nativeElement) {
+      const ctx = this.efficiencyChartCanvas.nativeElement.getContext('2d');
+      if (ctx) {
+        this.efficiencyChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: this.costHistory.map(s => new Date(s.timestamp).toLocaleDateString()),
+            datasets: [{
+              label: 'Efficiency Score (%)',
+              data: this.costHistory.map(s => s.efficiencyScore),
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.4,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top'
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: (context) => {
+                    return `Efficiency: ${context.parsed.y !== null && context.parsed.y !== undefined ? context.parsed.y.toFixed(1) : 'N/A'}%`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                  callback: (value) => value + '%'
+                }
+              }
+            }
+          }
+        });
+      }
+    }
   }
 
   backToOverview(): void {
     this.selectedView = 'overview';
     this.selectedNamespace = null;
     this.namespaceAnalysis = null;
+    this.costHistory = [];
+    this.savingsData = null;
+    
+    // Destroy charts
+    if (this.costChart) {
+      this.costChart.destroy();
+      this.costChart = null;
+    }
+    if (this.efficiencyChart) {
+      this.efficiencyChart.destroy();
+      this.efficiencyChart = null;
+    }
+    
+    this.loadData();
   }
 
   // Getters for filtered data
@@ -135,11 +352,6 @@ export class CostOptimizationComponent implements OnInit {
       return matchesPriority && matchesSearch;
     });
 
-    // Debug logging
-    if (filtered.length > 0) {
-      console.log('📊 Sample recommendation:', filtered[0]);
-    }
-    
     return filtered;
   }
 
@@ -217,6 +429,15 @@ export class CostOptimizationComponent implements OnInit {
     return value.toFixed(1);
   }
 
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString();
+  }
+
+  formatDateTime(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  }
+
   formatResource(value: number, unit: 'cpu' | 'memory'): string {
     if (unit === 'cpu') {
       return value < 1 ? `${(value * 1000).toFixed(0)}m` : `${value.toFixed(2)} cores`;
@@ -243,39 +464,24 @@ export class CostOptimizationComponent implements OnInit {
 
   // ==================== KUBECTL COMMAND GENERATION ====================
 
-  /**
-   * Extract deployment name from pod name
-   * Pattern: deployment-name-replicaset-hash-pod-hash
-   */
   private extractDeploymentName(podName: string): string {
     if (!podName) return 'unknown';
-    
-    // Remove pod hash (last segment after -)
     const parts = podName.split('-');
     if (parts.length < 3) return podName;
-    
-    // Remove last 2 segments (replicaset hash and pod hash)
     return parts.slice(0, -2).join('-');
   }
 
-  /**
-   * Extract resource value from formatted string
-   * Example: "CPU: 0.010 cores (10m)" -> "10m"
-   */
   private extractResourceValue(configString: string): string {
-    // Try to extract value in parentheses first (e.g., "10m" or "256Mi")
     const match = configString.match(/\(([^)]+)\)/);
     if (match) {
       return match[1];
     }
     
-    // Fallback: extract number and unit
     const valueMatch = configString.match(/(\d+\.?\d*)\s*(m|Mi|Gi|cores?|GB?)/i);
     if (valueMatch) {
       const value = parseFloat(valueMatch[1]);
       const unit = valueMatch[2].toLowerCase();
       
-      // Convert to k8s format
       if (unit === 'cores' || unit === 'core') {
         return value < 1 ? `${Math.round(value * 1000)}m` : `${value}`;
       } else if (unit === 'gb' || unit === 'g') {
@@ -284,12 +490,9 @@ export class CostOptimizationComponent implements OnInit {
       return `${value}${unit}`;
     }
     
-    return '100m'; // Fallback
+    return '100m';
   }
 
-  /**
-   * Generate kubectl command for a recommendation
-   */
   generateKubectlCommand(rec: CostRecommendation): string {
     const deployment = this.extractDeploymentName(rec.podName);
     const namespace = this.selectedNamespace || 'default';
@@ -303,16 +506,11 @@ export class CostOptimizationComponent implements OnInit {
     return `kubectl set resources deployment ${deployment} -n ${namespace} --requests=${resourceType}=${resourceValue}`;
   }
 
-  /**
-   * Generate kubectl command for both CPU and memory (if applicable)
-   */
   generateFullKubectlCommand(podName: string): string {
     if (!this.namespaceAnalysis) return '';
     
     const deployment = this.extractDeploymentName(podName);
     const namespace = this.selectedNamespace || 'default';
-    
-    // Find all recommendations for this pod
     const podRecs = this.namespaceAnalysis.recommendations.filter(r => r.podName === podName);
     
     if (podRecs.length === 0) return '';
@@ -333,9 +531,6 @@ export class CostOptimizationComponent implements OnInit {
     return `kubectl set resources deployment ${deployment} -n ${namespace} --requests=${resources.join(',')}`;
   }
 
-  /**
-   * Generate YAML patch for a recommendation
-   */
   generateYamlPatch(rec: CostRecommendation): string {
     const deployment = this.extractDeploymentName(rec.podName);
     const namespace = this.selectedNamespace || 'default';
@@ -361,53 +556,6 @@ spec:
             ${resourceType}: "${resourceValue}"`;
   }
 
-  /**
-   * Generate full YAML for all recommendations for a pod
-   */
-  generateFullYaml(podName: string): string {
-    if (!this.namespaceAnalysis) return '';
-    
-    const deployment = this.extractDeploymentName(podName);
-    const namespace = this.selectedNamespace || 'default';
-    
-    // Find all recommendations for this pod
-    const podRecs = this.namespaceAnalysis.recommendations.filter(r => r.podName === podName);
-    
-    if (podRecs.length === 0) return '';
-    
-    const resources: { [key: string]: string } = {};
-    
-    podRecs.forEach(rec => {
-      const value = this.extractResourceValue(rec.recommendedConfig);
-      if (rec.type.includes('cpu')) {
-        resources['cpu'] = value;
-      } else if (rec.type.includes('memory')) {
-        resources['memory'] = value;
-      }
-    });
-    
-    const resourceLines = Object.entries(resources)
-      .map(([key, value]) => `            ${key}: "${value}"`)
-      .join('\n');
-    
-    return `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ${deployment}
-  namespace: ${namespace}
-spec:
-  template:
-    spec:
-      containers:
-      - name: ${deployment}
-        resources:
-          requests:
-${resourceLines}`;
-  }
-
-  /**
-   * Copy text to clipboard and show toast notification
-   */
   async copyToClipboard(text: string, label: string = 'Command'): Promise<void> {
     try {
       await navigator.clipboard.writeText(text);
@@ -418,23 +566,16 @@ ${resourceLines}`;
     }
   }
 
-  /**
-   * Show toast notification
-   */
   private showToastNotification(message: string, type: 'success' | 'error'): void {
     this.toastMessage = message;
     this.toastType = type;
     this.showToast = true;
     
-    // Auto-hide after 3 seconds
     setTimeout(() => {
       this.showToast = false;
     }, 3000);
   }
 
-  /**
-   * Download text as file
-   */
   downloadAsFile(content: string, filename: string): void {
     const blob = new Blob([content], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
@@ -447,9 +588,6 @@ ${resourceLines}`;
     this.showToastNotification(`${filename} downloaded!`, 'success');
   }
 
-  /**
-   * Generate bulk commands for all recommendations
-   */
   generateBulkCommands(): string {
     if (!this.namespaceAnalysis?.recommendations) return '';
     
@@ -469,9 +607,6 @@ ${resourceLines}`;
     return commands.join('\n\n');
   }
 
-  /**
-   * Calculate total savings from filtered recommendations
-   */
   getTotalSavings(): number {
     if (!this.filteredRecommendations) return 0;
     
@@ -480,7 +615,6 @@ ${resourceLines}`;
     
     this.filteredRecommendations.forEach(rec => {
       if (!processedPods.has(rec.podName)) {
-        // Sum all savings for this pod
         const podSavings = this.namespaceAnalysis?.recommendations
           .filter(r => r.podName === rec.podName)
           .reduce((sum, r) => sum + r.potentialSavings, 0) || 0;

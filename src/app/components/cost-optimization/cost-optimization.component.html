@@ -171,17 +171,22 @@
       </div>
     </div>
 
-    <!-- Namespace Detail View -->
-    <div *ngIf="selectedView === 'namespace' && namespaceAnalysis" class="namespace-view">
-      <!-- Back Button -->
-      <button class="back-btn" (click)="backToOverview()">
-        ← Back to Overview
-      </button>
+      <!-- Namespace Detail View -->
+      <div *ngIf="selectedView === 'namespace' && namespaceAnalysis" class="namespace-view">
+        <!-- Back Button -->
+        <button class="back-btn" (click)="backToOverview()">
+          ← Back to Overview
+        </button>
 
-      <!-- Namespace Header -->
-      <div class="namespace-header">
-        <h2>📦 {{ namespaceAnalysis.namespace }}</h2>
-        <div class="namespace-metrics">
+        <!-- Namespace Header -->
+        <div class="namespace-header">
+          <div class="namespace-title-row">
+            <h2>📦 {{ namespaceAnalysis.namespace }}</h2>
+            <button class="timeline-btn" (click)="viewTimeline(namespaceAnalysis.namespace)">
+              📈 View Cost Timeline
+            </button>
+          </div>
+          <div class="namespace-metrics">
           <div class="metric">
             <span class="metric-label">Monthly Cost</span>
             <span class="metric-value">${{ formatCost(namespaceAnalysis.monthlyCost) }}</span>
@@ -392,6 +397,160 @@
                 </td>
                 <td class="cost-cell">${{ formatCost(pod.monthlyCost) }}</td>
                 <td class="wasted-cell">${{ formatCost(pod.wastedCost) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline View -->
+    <div *ngIf="selectedView === 'timeline' && selectedNamespace" class="timeline-view">
+      <!-- Back Button -->
+      <button class="back-btn" (click)="selectNamespace(selectedNamespace)">
+        ← Back to Analysis
+      </button>
+
+      <!-- Timeline Header -->
+      <div class="timeline-header">
+        <h2>📈 Cost Timeline: {{ selectedNamespace }}</h2>
+        <div class="timeline-actions">
+          <button class="action-btn primary" (click)="createSnapshot()">
+            📸 Create Snapshot
+          </button>
+          <select [(ngModel)]="timelineDays" (change)="loadTimelineData(selectedNamespace)" class="days-select">
+            <option [value]="7">Last 7 days</option>
+            <option [value]="30">Last 30 days</option>
+            <option [value]="60">Last 60 days</option>
+            <option [value]="90">Last 90 days</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Savings Summary -->
+      <div class="savings-summary" *ngIf="savingsData && savingsData.hasData">
+        <div class="savings-card big">
+          <div class="savings-icon">💰</div>
+          <div class="savings-content">
+            <h3>Total Savings</h3>
+            <div class="savings-amount">
+              ${{ formatCost(savingsData.savedMonthly!) }}<span class="period">/month</span>
+            </div>
+            <p class="savings-detail">
+              ${{ formatCost(savingsData.savedAnnually!) }}/year saved
+            </p>
+          </div>
+        </div>
+
+        <div class="savings-card">
+          <div class="savings-icon">📉</div>
+          <div class="savings-content">
+            <h3>Cost Reduction</h3>
+            <div class="savings-percent" [style.color]="savingsData.percentReduction! > 0 ? '#10b981' : '#ef4444'">
+              {{ formatPercent(savingsData.percentReduction!) }}%
+            </div>
+            <p class="savings-detail">
+              ${{ formatCost(savingsData.baselineCost!) }} → ${{ formatCost(savingsData.currentCost!) }}
+            </p>
+          </div>
+        </div>
+
+        <div class="savings-card">
+          <div class="savings-icon">📊</div>
+          <div class="savings-content">
+            <h3>Efficiency Improvement</h3>
+            <div class="savings-percent" [style.color]="getEfficiencyColor(savingsData.currentEfficiency!)">
+              +{{ formatPercent(savingsData.efficiencyImprovement!) }}%
+            </div>
+            <p class="savings-detail">
+              {{ formatPercent(savingsData.baselineEfficiency!) }}% → {{ formatPercent(savingsData.currentEfficiency!) }}%
+            </p>
+          </div>
+        </div>
+
+        <div class="savings-card">
+          <div class="savings-icon">📅</div>
+          <div class="savings-content">
+            <h3>Tracking Period</h3>
+            <div class="savings-days">{{ savingsData.daysTracked }} days</div>
+            <p class="savings-detail">
+              Since {{ formatDate(savingsData.baselineTimestamp!) }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Data Message -->
+      <div class="no-data-message" *ngIf="savingsData && !savingsData.hasData">
+        <span class="icon">📊</span>
+        <h3>Not Enough Data Yet</h3>
+        <p>{{ savingsData.message }}</p>
+        <button class="action-btn primary" (click)="createSnapshot()">
+          📸 Create First Snapshot
+        </button>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-section" *ngIf="costHistory.length > 0">
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3>💵 Cost Over Time</h3>
+            <p class="chart-subtitle">Monthly cost trend for {{ selectedNamespace }}</p>
+          </div>
+          <div class="chart-wrapper">
+            <canvas #costChart></canvas>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3>📊 Efficiency Score Over Time</h3>
+            <p class="chart-subtitle">Resource utilization efficiency</p>
+          </div>
+          <div class="chart-wrapper">
+            <canvas #efficiencyChart></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Snapshot History Table -->
+      <div class="snapshot-history" *ngIf="costHistory.length > 0">
+        <h3>📸 Snapshot History</h3>
+        <div class="table-container">
+          <table class="snapshot-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Monthly Cost</th>
+                <th>Efficiency</th>
+                <th>Pods</th>
+                <th>Wasted</th>
+                <th>Potential Savings</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let snapshot of costHistory">
+                <td>{{ formatDateTime(snapshot.timestamp) }}</td>
+                <td class="cost-cell">${{ formatCost(snapshot.totalMonthlyCost) }}</td>
+                <td>
+                  <span class="efficiency-badge" [style.background-color]="getEfficiencyColor(snapshot.efficiencyScore)">
+                    {{ formatPercent(snapshot.efficiencyScore) }}%
+                  </span>
+                </td>
+                <td>
+                  <div class="pod-breakdown">
+                    <span class="pod-count">{{ snapshot.totalPods }} total</span>
+                    <div class="pod-status-mini">
+                      <span class="mini-badge efficient">{{ snapshot.efficientPods }}</span>
+                      <span class="mini-badge over">{{ snapshot.overProvisionedPods }}</span>
+                      <span class="mini-badge under" *ngIf="snapshot.underProvisionedPods > 0">
+                        {{ snapshot.underProvisionedPods }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td class="wasted-cell">${{ formatCost(snapshot.wastedCost) }}</td>
+                <td class="savings-cell">${{ formatCost(snapshot.potentialSavings) }}</td>
               </tr>
             </tbody>
           </table>

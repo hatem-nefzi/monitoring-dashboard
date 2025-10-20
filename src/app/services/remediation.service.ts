@@ -23,6 +23,7 @@ export interface RemediationPolicy {
   autoScaleOnHighCPU: boolean;
   cpuThresholdPercent: number;
   notifyOnAction: boolean;
+  dryRunEnabled: boolean;
 }
 
 export interface RemediationStats {
@@ -109,4 +110,8 @@ export class RemediationService {
   healthCheck(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/health`);
   }
+  toggleDryRun(dryRunEnabled: boolean): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/dryrun?enabled=${dryRunEnabled}`, {});
+  }
+  
 }
