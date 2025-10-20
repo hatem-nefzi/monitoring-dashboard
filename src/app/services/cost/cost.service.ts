@@ -59,6 +59,41 @@ export interface CostConfig {
   note: string;
 }
 
+
+
+export interface CostSnapshot {
+  id: string;
+  namespace: string;
+  timestamp: string;
+  totalMonthlyCost: number;
+  hourlyCost: number;
+  efficiencyScore: number;
+  totalPods: number;
+  efficientPods: number;
+  overProvisionedPods: number;
+  underProvisionedPods: number;
+  totalCpuCores: number;
+  totalMemoryGb: number;
+  wastedCost: number;
+  potentialSavings: number;
+}
+
+export interface SavingsData {
+  hasData: boolean;
+  baselineCost?: number;
+  currentCost?: number;
+  savedMonthly?: number;
+  savedAnnually?: number;
+  percentReduction?: number;
+  baselineTimestamp?: string;
+  currentTimestamp?: string;
+  baselineEfficiency?: number;
+  currentEfficiency?: number;
+  efficiencyImprovement?: number;
+  daysTracked?: number;
+  message?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -88,5 +123,26 @@ export class CostService {
 
   healthCheck(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/health`);
+  }
+    // ===== NEW: Cost History Endpoints =====
+
+  getCostHistory(namespace: string, days: number = 30): Observable<{ success: boolean; history: CostSnapshot[] }> {
+    return this.http.get<any>(`${this.apiUrl}/history/${namespace}?days=${days}`);
+  }
+
+  getSavings(namespace: string): Observable<{ success: boolean; savings: SavingsData }> {
+    return this.http.get<any>(`${this.apiUrl}/savings/${namespace}`);
+  }
+
+  getCostTrend(namespace: string, days: number = 30): Observable<{ success: boolean; trend: any }> {
+    return this.http.get<any>(`${this.apiUrl}/trend/${namespace}?days=${days}`);
+  }
+
+  createSnapshot(namespace: string): Observable<{ success: boolean; snapshot: CostSnapshot }> {
+    return this.http.post<any>(`${this.apiUrl}/snapshot/${namespace}`, {});
+  }
+
+  getClusterCostHistory(days: number = 30): Observable<{ success: boolean; history: any }> {
+    return this.http.get<any>(`${this.apiUrl}/history/cluster?days=${days}`);
   }
 }
