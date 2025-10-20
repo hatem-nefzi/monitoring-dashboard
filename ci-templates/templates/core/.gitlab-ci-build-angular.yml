@@ -24,7 +24,7 @@ build:
     - echo "📦 Installing dependencies for ${APP_NAME}..."
     - npm ci
     - echo "🔨 Building Angular application..."
-    - npm run build:stats || npm run build
+    - npx ng build --configuration production --output-path=dist --stats-json && cp dist/stats.json ./stats.json || npx ng build
     - echo "✅ Build completed successfully!"
     - echo "📊 Build artifacts summary:"
     - ls -la dist/
