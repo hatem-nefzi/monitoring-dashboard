@@ -23,9 +23,24 @@ patches:
           limits:
             memory: "192Mi"
             cpu: "150m"
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts/-
+        value:
+          name: nginx-config
+          mountPath: /etc/nginx/conf.d/nginx.conf
+          subPath: nginx.conf
+      - op: add
+        path: /spec/template/spec/volumes/-
+        value:
+          name: nginx-config
+          configMap:
+            name: monitoring-frontend-config
+            items:
+            - key: nginx.conf
+              path: nginx.conf
   - path: configmap-patch.yaml
 
 images:
   - name: monitoring-frontend
     newName: registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui
-    newTag: latest # Replace with ${CI_COMMIT_SHORT_SHA} in GitLab CI
+    newTag: latest
