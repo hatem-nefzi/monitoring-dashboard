@@ -1,4 +1,3 @@
-// src/app/app.routes.ts
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { TestRouteComponent } from './components/test-route/test-route.component';
@@ -6,6 +5,7 @@ import { ResourceDashboardComponent } from './components/resource-dashboard/reso
 import { StaticPageComponent } from './components/static-page/static-page.component';
 import { RemediationComponent } from './components/remediation/remediation.component';
 import { CostOptimizationComponent } from './components/cost-optimization/cost-optimization.component';
+
 export const routes: Routes = [
   {
     path: 'test-pods',
@@ -14,10 +14,14 @@ export const routes: Routes = [
   },
   {
     path: 'static',
-    component:StaticPageComponent,
+    component: StaticPageComponent,
     canActivate: [authGuard]
   },
-  { path: '', redirectTo: '/test-pods', pathMatch: 'full' },
+  { 
+    path: '', 
+    redirectTo: '/test-pods', 
+    pathMatch: 'full' 
+  },
   {
     path: 'login',
     loadComponent: () => import('./components/login/login.component').then(c => c.LoginComponent)
@@ -26,16 +30,19 @@ export const routes: Routes = [
     path: 'resources',
     component: ResourceDashboardComponent,
     canActivate: [authGuard]
-  }
-  ,
-  {path: 'remediation', component: RemediationComponent, canActivate: [authGuard]},
-  
-  // ✅ ADD THIS NEW ROUTE
+  },
   {
-    path: 'cost-optimization',
-    loadComponent: () => import('./components/cost-optimization/cost-optimization.component')
-      .then(c => c.CostOptimizationComponent),
+    path: 'remediation', 
+    component: RemediationComponent, 
     canActivate: [authGuard]
   },
-  { path: '**', redirectTo: '/test-pods' }
+  {
+    path: 'cost-optimization',
+    component: CostOptimizationComponent,  // ← Use static import
+    canActivate: [authGuard]
+  },
+  { 
+    path: '**', 
+    redirectTo: '/test-pods' 
+  }
 ];
