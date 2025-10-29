@@ -572,7 +572,7 @@ spec:
         await navigator.clipboard.writeText(text);
         this.showToastNotification(`${label} copied to clipboard!`, 'success');
       } else {
-        // Fallback for insecure contexts
+        // Fallback for insecure contexts..
         this.fallbackCopyToClipboard(text);
         this.showToastNotification(`${label} copied to clipboard!`, 'success');
       }
