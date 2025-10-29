@@ -16,6 +16,6 @@ USER nginx  # Switch back to non-root user
 
 # Copy our files
 COPY --from=builder /app/dist /usr/share/nginx/html
-#COPY nginx.conf /etc/nginx/conf.d/
+COPY nginx.conf /etc/nginx/conf.d/
 
 EXPOSE 8080
