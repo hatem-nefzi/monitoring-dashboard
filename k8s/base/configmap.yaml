@@ -7,7 +7,7 @@ data:
     server {
         listen 8080;
         server_name localhost;
-        root /usr/share/nginx/html;
+        root /usr/share/nginx/html/browser;
         index index.html;
         
         # Security headers
