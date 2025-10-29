@@ -48,10 +48,16 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
 
+  // Clipboard API availability
+  private clipboardAvailable = false;
+
   constructor(
     private costService: CostService,
     private k8sService: KubernetesService
-  ) {}
+  ) {
+    // Check if clipboard API is available
+    this.clipboardAvailable = !!(navigator.clipboard && navigator.clipboard.writeText);
+  }
 
   ngOnInit(): void {
     this.loadData();
@@ -134,7 +140,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
     this.costService.getCostHistory(namespace, this.timelineDays).subscribe({
       next: (response) => {
         if (response.success) {
-          this.costHistory = response.history;
+          this.costHistory = response.history || [];
           
           // Load savings data
           this.costService.getSavings(namespace).subscribe({
@@ -189,7 +195,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
   }
 
   private createCharts(): void {
-    if (this.costHistory.length === 0) {
+    if (!this.costHistory || this.costHistory.length === 0) {
       console.log('No history data to chart');
       return;
     }
@@ -328,7 +334,9 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
 
   // Getters for filtered data
   get filteredPodCosts(): ResourceCost[] {
-    if (!this.namespaceAnalysis?.podCosts) return [];
+    if (!this.namespaceAnalysis?.podCosts || !Array.isArray(this.namespaceAnalysis.podCosts)) {
+      return [];
+    }
     
     return this.namespaceAnalysis.podCosts.filter(pod => {
       const matchesStatus = this.statusFilter === 'all' || pod.status === this.statusFilter;
@@ -341,7 +349,9 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
   }
 
   get filteredRecommendations(): CostRecommendation[] {
-    if (!this.namespaceAnalysis?.recommendations) return [];
+    if (!this.namespaceAnalysis?.recommendations || !Array.isArray(this.namespaceAnalysis.recommendations)) {
+      return [];
+    }
     
     const filtered = this.namespaceAnalysis.recommendations.filter(rec => {
       const matchesPriority = this.priorityFilter === 'all' || rec.priority === this.priorityFilter;
@@ -351,7 +361,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
       
       return matchesPriority && matchesSearch;
     });
-
+    
     return filtered;
   }
 
@@ -463,7 +473,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
   }
 
   // ==================== KUBECTL COMMAND GENERATION ====================
-
+  
   private extractDeploymentName(podName: string): string {
     if (!podName) return 'unknown';
     const parts = podName.split('-');
@@ -558,11 +568,37 @@ spec:
 
   async copyToClipboard(text: string, label: string = 'Command'): Promise<void> {
     try {
-      await navigator.clipboard.writeText(text);
-      this.showToastNotification(`${label} copied to clipboard!`, 'success');
+      if (this.clipboardAvailable) {
+        await navigator.clipboard.writeText(text);
+        this.showToastNotification(`${label} copied to clipboard!`, 'success');
+      } else {
+        // Fallback for insecure contexts
+        this.fallbackCopyToClipboard(text);
+        this.showToastNotification(`${label} copied to clipboard!`, 'success');
+      }
     } catch (err) {
       console.error('Failed to copy:', err);
       this.showToastNotification('Failed to copy to clipboard', 'error');
+    }
+  }
+
+  private fallbackCopyToClipboard(text: string): void {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      textArea.remove();
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      textArea.remove();
+      throw err;
     }
   }
 
@@ -608,7 +644,9 @@ spec:
   }
 
   getTotalSavings(): number {
-    if (!this.filteredRecommendations) return 0;
+    if (!this.filteredRecommendations || this.filteredRecommendations.length === 0) {
+      return 0;
+    }
     
     const processedPods = new Set<string>();
     let total = 0;
