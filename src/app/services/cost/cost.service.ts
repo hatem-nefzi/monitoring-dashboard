@@ -1,7 +1,7 @@
 // src/app/services/cost.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { catchError, Observable, tap } from 'rxjs';
 
 export interface ResourceCost {
   podName: string;
@@ -138,9 +138,18 @@ export class CostService {
     return this.http.get<any>(`${this.apiUrl}/trend/${namespace}?days=${days}`);
   }
 
-  createSnapshot(namespace: string): Observable<{ success: boolean; snapshot: CostSnapshot }> {
-    return this.http.post<any>(`${this.apiUrl}/snapshot/${namespace}`, {});
-  }
+  
+createSnapshot(namespace: string): Observable<{ success: boolean; snapshot: CostSnapshot }> {
+    return this.http.post<any>(`${this.apiUrl}/snapshot/${namespace}`, {}).pipe(
+        tap(response => {
+            console.log('📸 Snapshot API Response:', response);
+        }),
+        catchError(error => {
+            console.error('❌ Snapshot API Error:', error);
+            throw error;
+        })
+    );
+}
 
   getClusterCostHistory(days: number = 30): Observable<{ success: boolean; history: any }> {
     return this.http.get<any>(`${this.apiUrl}/history/cluster?days=${days}`);

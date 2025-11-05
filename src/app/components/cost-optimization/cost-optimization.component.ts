@@ -431,9 +431,12 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
     }
   }
 
-  formatCost(cost: number): string {
+  formatCost(cost: number | undefined | null): string {
+    if (cost === undefined || cost === null || isNaN(cost)) {
+        return '0.00';
+    }
     return cost.toFixed(2);
-  }
+}
 
   formatPercent(value: number): string {
     return value.toFixed(1);
