@@ -6,17 +6,22 @@
     <span class="toast-message">{{ toastMessage }}</span>
   </div>
 
-  <!-- Header -->
   <div class="header">
-    <div class="header-content">
-      <h1>💰 Cost Optimization</h1>
-      <p class="subtitle">Monitor and optimize your Kubernetes cluster costs</p>
-    </div>
-    <button class="refresh-btn" (click)="loadData()" [disabled]="loading">
+  <div class="header-content">
+    <h1>💰 Cost Optimization</h1>
+    <p class="subtitle">Monitor and optimize your Kubernetes cluster costs</p>
+  </div>
+  <div class="header-actions">
+    <button class="refresh-btn secondary" (click)="loadData()" [disabled]="loading || forceRefreshing">
       <span class="icon">🔄</span>
       Refresh
     </button>
+    <button class="refresh-btn primary" (click)="forceRefresh()" [disabled]="loading || forceRefreshing">
+      <span class="icon">⚡</span>
+      Force Refresh
+    </button>
   </div>
+</div>
 
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-state">

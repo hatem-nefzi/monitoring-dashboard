@@ -59,6 +59,9 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
     this.clipboardAvailable = !!(navigator.clipboard && navigator.clipboard.writeText);
   }
 
+  //for caching
+  forceRefreshing = false;  // Track force refresh state
+
   ngOnInit(): void {
     this.loadData();
   }
@@ -67,9 +70,16 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
     // Charts will be created when timeline data loads
   }
 
-  async loadData(): Promise<void> {
+  async loadData(forceRefreshing: boolean=false): Promise<void> {
     this.loading = true;
     this.error = null;
+
+    if (forceRefreshing) {
+      this.forceRefreshing = true;
+      this.showToastNotification('Force refreshing data...', 'success');
+    }
+
+
 
     try {
       // Load namespaces
@@ -91,8 +101,15 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
           next: (response) => {
             if (response.success) {
               this.clusterSummary = response.summary;
+            if (forceRefreshing) {
+                const msg = response.cached 
+                  ? '⚡ Data loaded from cache'
+                  : `✅ Fresh data loaded (${response.responseTimeMs}ms)`;
+                this.showToastNotification(msg, 'success');
+              }
             }
             this.loading = false;
+            this.forceRefreshing = false;
           },
           error: (err) => {
             this.error = 'Failed to load cost data: ' + err.message;
@@ -103,29 +120,44 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
     } catch (err: any) {
       this.error = 'Failed to load cost data: ' + err.message;
       this.loading = false;
+      this.forceRefreshing = false;
     }
   }
 
-  private loadNamespaceAnalysis(namespace: string): void {
-    this.costService.getNamespaceCostAnalysis(namespace).subscribe({
+  private loadNamespaceAnalysis(namespace: string, forceRefresh: boolean = false): void {
+    this.costService.getNamespaceCostAnalysis(namespace, forceRefresh).subscribe({
       next: (response) => {
         if (response.success) {
           this.namespaceAnalysis = response.analysis;
+          
+          // Show cache info
+          if (forceRefresh) {
+            const msg = response.cached 
+              ? '⚡ Data loaded from cache'
+              : `✅ Fresh data loaded (${response.responseTimeMs}ms)`;
+            this.showToastNotification(msg, 'success');
+          }
         }
         this.loading = false;
+        this.forceRefreshing = false;
       },
       error: (err) => {
         this.error = 'Failed to load namespace analysis: ' + err.message;
         this.loading = false;
+        this.forceRefreshing = false;
       }
     });
   }
 
-  selectNamespace(namespace: string): void {
+  selectNamespace(namespace: string, forceRefreshing: boolean = false): void {
     this.selectedNamespace = namespace;
     this.selectedView = 'namespace';
     this.loading = true;
-    this.loadNamespaceAnalysis(namespace);
+    this.loadNamespaceAnalysis(namespace, forceRefreshing);
+  }
+  forceRefresh(): void {
+    if (this.forceRefreshing) return; // Prevent double-click
+    this.loadData(true);
   }
 
   viewTimeline(namespace: string): void {
