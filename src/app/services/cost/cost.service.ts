@@ -102,13 +102,13 @@ export class CostService {
 
   // ===== UPDATED: Add refresh parameter =====
   getNamespaceCostAnalysis(namespace: string, refresh: boolean = false): Observable<{ success: boolean; namespace: string; analysis: CostAnalysis; cached?: boolean; responseTimeMs?: number }> {
-    const url = `${this.apiUrl}/analysis/${namespace}${refresh ? '?refresh=true' : ''}`;
+    const url = `${this.apiUrl}/analysis/${namespace}${refresh ? '?refreshCache=true' : ''}`;
     return this.http.get<any>(url);
-  }
+}
 
   // ===== UPDATED: Add refresh parameter =====
   getClusterCostSummary(refresh: boolean = false): Observable<{ success: boolean; summary: ClusterCostSummary; cached?: boolean; responseTimeMs?: number }> {
-    const url = `${this.apiUrl}/summary${refresh ? '?refresh=true' : ''}`;
+    const url = `${this.apiUrl}/summary${refresh ? '?refreshCache=true' : ''}`;
     return this.http.get<any>(url);
   }
 
