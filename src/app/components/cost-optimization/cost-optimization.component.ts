@@ -92,7 +92,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
 
       // If we're in namespace view, reload that namespace
       if (this.selectedView === 'namespace' && this.selectedNamespace) {
-        this.loadNamespaceAnalysis(this.selectedNamespace);
+        this.loadNamespaceAnalysis(this.selectedNamespace, forceRefreshing);// the bug that was causing each namespace to rewrite cache even with simple refresh 
       } else if (this.selectedView === 'timeline' && this.selectedNamespace) {
         this.loadTimelineData(this.selectedNamespace);
       } else {
