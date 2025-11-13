@@ -191,7 +191,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
               }
               
               // Load current analysis
-              this.loadNamespaceAnalysis(namespace);
+              this.loadNamespaceAnalysis(namespace,false);
               
               // Create charts after a small delay to ensure DOM is ready
               setTimeout(() => {
