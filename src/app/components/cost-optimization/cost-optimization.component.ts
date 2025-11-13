@@ -46,7 +46,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
   // Toast notification state
   showToast = false;
   toastMessage = '';
-  toastType: 'success' | 'error' = 'success';
+  toastType: 'success' | 'error' | 'warning' = 'success';
 
   // Clipboard API availability
   private clipboardAvailable = false;
@@ -97,13 +97,13 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
         this.loadTimelineData(this.selectedNamespace);
       } else {
         // Load cluster summary for overview
-        this.costService.getClusterCostSummary().subscribe({
+        this.costService.getClusterCostSummary(forceRefreshing).subscribe({
           next: (response) => {
             if (response.success) {
               this.clusterSummary = response.summary;
             if (forceRefreshing) {
                 const msg = response.cached 
-                  ? '⚡ Data loaded from cache'
+                  ? '⚠️ Warning: Still using cached data'  // Shouldn't happen
                   : `✅ Fresh data loaded (${response.responseTimeMs}ms)`;
                 this.showToastNotification(msg, 'success');
               }
@@ -125,40 +125,49 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
   }
 
   private loadNamespaceAnalysis(namespace: string, forceRefresh: boolean = false): void {
-    this.costService.getNamespaceCostAnalysis(namespace, forceRefresh).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.namespaceAnalysis = response.analysis;
-          
-          // Show cache info
-          if (forceRefresh) {
-            const msg = response.cached 
-              ? '⚡ Data loaded from cache'
-              : `✅ Fresh data loaded (${response.responseTimeMs}ms)`;
-            this.showToastNotification(msg, 'success');
-          }
+  this.loading = true;
+  
+  this.costService.getNamespaceCostAnalysis(namespace, forceRefresh).subscribe({
+    next: (response) => {
+      if (response.success) {
+        this.namespaceAnalysis = response.analysis;
+        
+        // ✅ FIX: Correct logic
+        if (forceRefresh) {
+          const msg = response.cached 
+            ? '⚠️ Warning: Still using cached data'  // Shouldn't happen
+            : `✅ Fresh data loaded (${response.responseTimeMs}ms)`;
+          this.showToastNotification(msg, response.cached ? 'warning' : 'success');
         }
-        this.loading = false;
-        this.forceRefreshing = false;
-      },
-      error: (err) => {
-        this.error = 'Failed to load namespace analysis: ' + err.message;
-        this.loading = false;
-        this.forceRefreshing = false;
       }
-    });
-  }
+      this.loading = false;
+      this.forceRefreshing = false;
+    },
+    error: (err) => {
+      this.error = 'Failed to load namespace analysis: ' + err.message;
+      this.loading = false;
+      this.forceRefreshing = false;
+      this.showToastNotification('❌ Failed to refresh data', 'error');
+    }
+  });
+}
 
   selectNamespace(namespace: string, forceRefreshing: boolean = false): void {
-    this.selectedNamespace = namespace;
-    this.selectedView = 'namespace';
-    this.loading = true;
-    this.loadNamespaceAnalysis(namespace, forceRefreshing);
-  }
+  this.selectedNamespace = namespace;
+  this.selectedView = 'namespace';
+  this.loading = true;
+  this.loadNamespaceAnalysis(namespace, forceRefreshing);
+}
   forceRefresh(): void {
     if (this.forceRefreshing) return; // Prevent double-click
     this.loadData(true);
   }
+  
+  refresh(): void {
+  if (this.loading) return;
+  this.loadData(false);  // Use cache
+}
+
 
   viewTimeline(namespace: string): void {
     this.selectedNamespace = namespace;
@@ -637,7 +646,7 @@ spec:
     }
   }
 
-  private showToastNotification(message: string, type: 'success' | 'error'): void {
+  private showToastNotification(message: string, type: 'success' | 'error' | 'warning'): void {
     this.toastMessage = message;
     this.toastType = type;
     this.showToast = true;

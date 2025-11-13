@@ -12,7 +12,7 @@
     <p class="subtitle">Monitor and optimize your Kubernetes cluster costs</p>
   </div>
   <div class="header-actions">
-    <button class="refresh-btn secondary" (click)="loadData()" [disabled]="loading || forceRefreshing">
+    <button class="refresh-btn secondary" (click)="refresh()" [disabled]="loading || forceRefreshing">
       <span class="icon">🔄</span>
       Refresh
     </button>
