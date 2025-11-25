@@ -106,7 +106,7 @@ export class CostService {
     return this.http.get<any>(url);
 }
 
-  // ===== UPDATED: Add refresh parameter =====
+  // ===== UPDATED: Add refresh parameter =====.
   getClusterCostSummary(refresh: boolean = false): Observable<{ success: boolean; summary: ClusterCostSummary; cached?: boolean; responseTimeMs?: number }> {
     const url = `${this.apiUrl}/summary${refresh ? '?refreshCache=true' : ''}`;
     return this.http.get<any>(url);
