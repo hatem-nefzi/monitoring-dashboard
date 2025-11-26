@@ -1,0 +1,428 @@
+<!-- src/app/components/cost-intelligence/cost-intelligence.component.html -->
+<div class="cost-intelligence-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="icon">🧠</span>
+        Cost Intelligence Dashboard
+      </h1>
+      <p class="subtitle">AI-powered cost analysis, forecasting & anomaly detection</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="header-controls">
+      <div class="control-group">
+        <label for="namespace-select">Namespace:</label>
+        <select 
+          id="namespace-select"
+          [(ngModel)]="selectedNamespace" 
+          (change)="onNamespaceChange()"
+          [disabled]="loading"
+          class="namespace-select">
+          <option *ngFor="let ns of namespaces" [value]="ns.value">
+            {{ ns.label }}
+          </option>
+        </select>
+      </div>
+
+      <button 
+        class="btn btn-primary"
+        (click)="refresh()"
+        [disabled]="loading">
+        <span *ngIf="!loading">🔄 Refresh</span>
+        <span *ngIf="loading">⏳ Loading...</span>
+      </button>
+
+      <button 
+        class="btn"
+        [class.btn-success]="autoRefresh"
+        (click)="toggleAutoRefresh()">
+        {{ autoRefresh ? '⏸️ Stop Auto-refresh' : '▶️ Auto-refresh' }}
+      </button>
+
+      <button 
+        class="btn btn-secondary"
+        (click)="showDemoControls = !showDemoControls">
+        🎬 Demo Controls
+      </button>
+    </div>
+  </div>
+
+  <!-- Alert Messages -->
+  <div class="alerts-container" *ngIf="alerts.length > 0">
+    <div 
+      *ngFor="let alert of alerts" 
+      class="alert"
+      [class.alert-success]="alert.type === 'success'"
+      [class.alert-error]="alert.type === 'error'"
+      [class.alert-warning]="alert.type === 'warning'"
+      [class.alert-info]="alert.type === 'info'">
+      <span class="alert-message">{{ alert.message }}</span>
+      <button class="alert-close" (click)="dismissAlert(alert)">×</button>
+    </div>
+  </div>
+
+  <!-- Demo Controls Panel -->
+  <div class="demo-panel" *ngIf="showDemoControls">
+    <h3>🎬 Demo & Testing Controls</h3>
+    <div class="demo-buttons">
+      <button class="btn btn-warning" (click)="simulateAnomaly('SPIKE')">
+        ⚡ Simulate Cost Spike
+      </button>
+      <button class="btn btn-info" (click)="simulateAnomaly('DROP')">
+        📉 Simulate Cost Drop
+      </button>
+      <button class="btn btn-secondary" (click)="simulateAnomaly('DRIFT')">
+        🌊 Simulate Cost Drift
+      </button>
+      <button class="btn btn-success" (click)="createSnapshot()">
+        📸 Create Snapshot
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Overview Cards -->
+  <div class="stats-grid" *ngIf="intelligenceData">
+    <div class="stat-card" [ngClass]="getHealthScoreClass(stats.healthScore)">
+      <div class="stat-icon">💚</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.healthScore }}</div>
+        <div class="stat-label">Health Score</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ formatCurrency(intelligenceData.currentAnalysis.monthlyCost) }}</div>
+        <div class="stat-label">Current Monthly Cost</div>
+      </div>
+    </div>
+
+    <div class="stat-card" [ngClass]="getRiskLevelClass(stats.riskLevel)">
+      <div class="stat-icon">{{ getTrendIcon(stats.forecastTrend) }}</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ formatCurrency(intelligenceData.forecast.predictedMonthlyCost) }}</div>
+        <div class="stat-label">Forecasted Cost</div>
+        <div class="stat-detail">
+          {{ formatPercent(intelligenceData.forecast.changePercent) }}
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.critical]="stats.criticalAnomalies > 0">
+      <div class="stat-icon">🚨</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.criticalAnomalies }} / {{ stats.totalAnomalies }}</div>
+        <div class="stat-label">Critical Anomalies</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading && !intelligenceData">
+    <div class="spinner"></div>
+    <p>Loading intelligence data...</p>
+  </div>
+
+  <!-- Main Content - Tabs -->
+  <div class="tabs-container" *ngIf="intelligenceData && !loading">
+    <!-- Tab Navigation -->
+    <div class="tabs-nav">
+      <button 
+        class="tab-btn"
+        [class.active]="activeTab === 'overview'"
+        (click)="activeTab = 'overview'">
+        📊 Overview
+      </button>
+      <button 
+        class="tab-btn"
+        [class.active]="activeTab === 'forecast'"
+        (click)="activeTab = 'forecast'">
+        🔮 Forecast
+      </button>
+      <button 
+        class="tab-btn"
+        [class.active]="activeTab === 'anomalies'"
+        (click)="activeTab = 'anomalies'">
+        🚨 Anomalies ({{ stats.totalAnomalies }})
+      </button>
+      <button 
+        class="tab-btn"
+        [class.active]="activeTab === 'savings'"
+        (click)="activeTab = 'savings'">
+        💎 Savings
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Overview Tab -->
+      <div *ngIf="activeTab === 'overview'" class="tab-panel">
+        <div class="overview-grid">
+          <!-- Current Analysis -->
+          <div class="panel">
+            <h3 class="panel-title">📈 Current Analysis</h3>
+            <div class="metrics-list">
+              <div class="metric-row">
+                <span class="metric-label">Efficiency Score:</span>
+                <span class="metric-value">{{ intelligenceData.currentAnalysis.efficiencyScore }}%</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Total Pods:</span>
+                <span class="metric-value">{{ intelligenceData.currentAnalysis.totalPods }}</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">CPU Cores:</span>
+                <span class="metric-value">{{ intelligenceData.currentAnalysis.totalCpuCores.toFixed(2) }}</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Memory:</span>
+                <span class="metric-value">{{ intelligenceData.currentAnalysis.totalMemoryGb.toFixed(2) }} GB</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Forecast -->
+          <div class="panel">
+            <h3 class="panel-title">🔮 30-Day Forecast</h3>
+            <div class="forecast-summary">
+              <div class="forecast-main">
+                <span class="forecast-icon">{{ getTrendIcon(intelligenceData.forecast.trend) }}</span>
+                <div>
+                  <div class="forecast-amount">{{ formatCurrency(intelligenceData.forecast.predictedMonthlyCost) }}</div>
+                  <div class="forecast-change" [class.positive]="intelligenceData.forecast.changePercent > 0">
+                    {{ formatPercent(intelligenceData.forecast.changePercent) }}
+                  </div>
+                </div>
+              </div>
+              <div class="forecast-risk" [ngClass]="getRiskLevelClass(intelligenceData.forecast.riskLevel)">
+                Risk: {{ intelligenceData.forecast.riskLevel }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Savings Summary -->
+          <div class="panel" *ngIf="intelligenceData.savings.hasData">
+            <h3 class="panel-title">💰 Savings Achieved</h3>
+            <div class="savings-summary">
+              <div class="savings-amount">
+                {{ formatCurrency(intelligenceData.savings.savedMonthly || 0) }}
+                <span class="savings-period">/month</span>
+              </div>
+              <div class="savings-detail">
+                {{ formatPercent(intelligenceData.savings.percentReduction || 0) }} reduction
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Anomalies -->
+          <div class="panel">
+            <h3 class="panel-title">🚨 Recent Anomalies</h3>
+            <div *ngIf="intelligenceData.anomalies.length === 0" class="empty-state">
+              <p>✅ No anomalies detected</p>
+            </div>
+            <div *ngIf="intelligenceData.anomalies.length > 0" class="anomalies-preview">
+              <div 
+                *ngFor="let anomaly of intelligenceData.anomalies.slice(0, 3)" 
+                class="anomaly-item"
+                [ngClass]="getSeverityClass(anomaly.severity)">
+                <div class="anomaly-header">
+                  <span class="anomaly-type">{{ anomaly.type }}</span>
+                  <span class="anomaly-severity">{{ anomaly.severity }}</span>
+                </div>
+                <div class="anomaly-desc">{{ anomaly.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Forecast Tab -->
+      <div *ngIf="activeTab === 'forecast'" class="tab-panel">
+        <div class="forecast-detailed">
+          <div class="panel">
+            <h3 class="panel-title">🔮 Cost Forecast Analysis</h3>
+            
+            <div class="forecast-header">
+              <div class="forecast-badge" [ngClass]="getRiskLevelClass(intelligenceData.forecast.riskLevel)">
+                {{ intelligenceData.forecast.riskLevel }} RISK
+              </div>
+              <div class="forecast-confidence">
+                Confidence: {{ (intelligenceData.forecast.confidence * 100).toFixed(0) }}%
+              </div>
+            </div>
+
+            <div class="forecast-comparison">
+              <div class="forecast-col">
+                <label>Current Monthly Cost</label>
+                <div class="forecast-value">{{ formatCurrency(intelligenceData.forecast.currentMonthlyCost) }}</div>
+              </div>
+              <div class="forecast-arrow">→</div>
+              <div class="forecast-col">
+                <label>Predicted Monthly Cost</label>
+                <div class="forecast-value predicted">{{ formatCurrency(intelligenceData.forecast.predictedMonthlyCost) }}</div>
+              </div>
+            </div>
+
+            <div class="forecast-details">
+              <div class="detail-row">
+                <span>Trend Direction:</span>
+                <strong>{{ getTrendIcon(intelligenceData.forecast.trend) }} {{ intelligenceData.forecast.trend }}</strong>
+              </div>
+              <div class="detail-row">
+                <span>Change:</span>
+                <strong [class.negative]="intelligenceData.forecast.changePercent > 0">
+                  {{ formatPercent(intelligenceData.forecast.changePercent) }}
+                </strong>
+              </div>
+              <div class="detail-row">
+                <span>Predicted Weekly Cost:</span>
+                <strong>{{ formatCurrency(intelligenceData.forecast.predictedWeeklyCost) }}</strong>
+              </div>
+              <div class="detail-row">
+                <span>Data Points Used:</span>
+                <strong>{{ intelligenceData.forecast.snapshotsUsed }} snapshots</strong>
+              </div>
+            </div>
+
+            <div class="forecast-message">
+              <p>{{ intelligenceData.forecast.message }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anomalies Tab -->
+      <div *ngIf="activeTab === 'anomalies'" class="tab-panel">
+        <div class="anomalies-section">
+          <div *ngIf="intelligenceData.anomalies.length === 0" class="empty-state large">
+            <div class="empty-icon">✅</div>
+            <h3>No Anomalies Detected</h3>
+            <p>Your namespace is operating normally with no cost anomalies.</p>
+          </div>
+
+          <div *ngIf="intelligenceData.anomalies.length > 0" class="anomalies-list">
+            <div 
+              *ngFor="let anomaly of intelligenceData.anomalies" 
+              class="anomaly-card"
+              [ngClass]="getSeverityClass(anomaly.severity)">
+              
+              <div class="anomaly-card-header">
+                <div class="anomaly-meta">
+                  <span class="anomaly-type-badge">{{ anomaly.type }}</span>
+                  <span class="anomaly-severity-badge">{{ anomaly.severity }}</span>
+                  <span class="anomaly-time">{{ getRelativeTime(anomaly.timestamp) }}</span>
+                </div>
+                <div class="anomaly-confidence">
+                  {{ (anomaly.confidence * 100).toFixed(0) }}% confidence
+                </div>
+              </div>
+
+              <div class="anomaly-card-body">
+                <h4>{{ anomaly.description }}</h4>
+                
+                <div class="anomaly-stats">
+                  <div class="stat">
+                    <label>Current Value:</label>
+                    <value>{{ formatCurrency(anomaly.currentValue) }}</value>
+                  </div>
+                  <div class="stat">
+                    <label>Expected Value:</label>
+                    <value>{{ formatCurrency(anomaly.expectedValue) }}</value>
+                  </div>
+                  <div class="stat">
+                    <label>Deviation:</label>
+                    <value class="deviation">{{ formatPercent(anomaly.deviation * 100) }}</value>
+                  </div>
+                </div>
+
+                <div class="anomaly-recommendation">
+                  <strong>💡 Recommendation:</strong>
+                  <p>{{ anomaly.recommendation }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Savings Tab -->
+      <div *ngIf="activeTab === 'savings'" class="tab-panel">
+        <div class="savings-section">
+          <div *ngIf="!intelligenceData.savings.hasData" class="empty-state large">
+            <div class="empty-icon">📊</div>
+            <h3>No Historical Data Available</h3>
+            <p>Start collecting data to track your cost savings over time.</p>
+          </div>
+
+          <div *ngIf="intelligenceData.savings.hasData" class="savings-detailed">
+            <div class="panel">
+              <h3 class="panel-title">💰 Cost Savings Analysis</h3>
+              
+              <div class="savings-hero">
+                <div class="savings-main">
+                  <div class="savings-amount-large">
+                    {{ formatCurrency(intelligenceData.savings.savedMonthly || 0) }}
+                  </div>
+                  <div class="savings-period-label">Monthly Savings</div>
+                </div>
+                <div class="savings-annual">
+                  <div class="annual-amount">{{ formatCurrency(intelligenceData.savings.savedAnnually || 0) }}</div>
+                  <div class="annual-label">Annual Projection</div>
+                </div>
+              </div>
+
+              <div class="savings-metrics">
+                <div class="metric-card">
+                  <label>Baseline Cost</label>
+                  <value>{{ formatCurrency(intelligenceData.savings.baselineCost || 0) }}</value>
+                  <small>{{ formatDate(intelligenceData.savings.baselineTimestamp || '') }}</small>
+                </div>
+                <div class="metric-card">
+                  <label>Current Cost</label>
+                  <value>{{ formatCurrency(intelligenceData.savings.currentCost || 0) }}</value>
+                  <small>{{ formatDate(intelligenceData.savings.currentTimestamp || '') }}</small>
+                </div>
+                <div class="metric-card success">
+                  <label>Cost Reduction</label>
+                  <value>{{ formatPercent(intelligenceData.savings.percentReduction || 0) }}</value>
+                  <small>{{ intelligenceData.savings.daysTracked }} days tracked</small>
+                </div>
+              </div>
+
+              <div class="efficiency-improvement">
+                <h4>Efficiency Progress</h4>
+                <div class="efficiency-bar">
+                  <div class="efficiency-before">
+                    <label>Baseline</label>
+                    <div class="bar">
+                      <div class="fill" [style.width.%]="intelligenceData.savings.baselineEfficiency"></div>
+                    </div>
+                    <span>{{ intelligenceData.savings.baselineEfficiency }}%</span>
+                  </div>
+                  <div class="efficiency-after">
+                    <label>Current</label>
+                    <div class="bar">
+                      <div class="fill improved" [style.width.%]="intelligenceData.savings.currentEfficiency"></div>
+                    </div>
+                    <span>{{ intelligenceData.savings.currentEfficiency }}%</span>
+                  </div>
+                </div>
+                <div class="improvement-badge">
+                  +{{ intelligenceData.savings.efficiencyImprovement }}% improvement
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Info -->
+  <div class="footer-info" *ngIf="lastUpdated">
+    <span>Last updated: {{ formatDate(lastUpdated) }}</span>
+  </div>
+</div>

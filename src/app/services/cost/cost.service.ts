@@ -92,6 +92,50 @@ export interface SavingsData {
   message?: string;
 }
 
+export interface CostForecast {
+  namespace: string;
+  currentMonthlyCost: number;
+  predictedMonthlyCost: number;
+  predictedWeeklyCost: number;
+  daysAhead: number;
+  trend: 'INCREASING' | 'DECREASING' | 'STABLE';
+  confidence: number;
+  changePercent: number;
+  snapshotsUsed: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  message: string;
+}
+
+export interface CostAnomaly {
+  namespace: string;
+  timestamp: string;
+  type: 'SPIKE' | 'DROP' | 'DRIFT' | 'UNUSUAL_PATTERN';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  currentValue: number;
+  expectedValue: number;
+  deviation: number;
+  description: string;
+  recommendation: string;
+  confidence: number;
+}
+
+export interface CostIntelligenceData {
+  currentAnalysis: CostAnalysis;
+  forecast: CostForecast;
+  anomalies: CostAnomaly[];
+  savings: SavingsData;
+  healthScore: number;
+}
+
+export interface TrendData {
+  direction: 'UP' | 'DOWN' | 'STABLE';
+  percentChange: number;
+  avgCost: number;
+  projectedNextMonth: number;
+  volatility: number;
+}
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -172,4 +216,32 @@ export class CostService {
   clearAllCaches(): Observable<{ success: boolean; message: string; namespacesCleared?: number }> {
     return this.http.post<any>(`${this.apiUrl}/cache/clear`, {});
   }
+
+  // cost forecast method
+  getCostForecast(namespace: string ,days: number = 30): Observable<{ success: boolean ; forecast: CostForecast  }> {
+    return this.http.get<any>(`${this.apiUrl}/forecast/${namespace}?days=${days}`);
+  }
+
+  getClusterCostForecast(days: number = 30): Observable<{ success: boolean; forecasts: any; summary: any }> {
+  return this.http.get<any>(`${this.apiUrl}/forecast/cluster?days=${days}`);
+}
+
+// Anomaly Detection
+getNamespaceAnomalies(namespace: string): Observable<{ success: boolean; anomalies: CostAnomaly[]; count: number }> {
+  return this.http.get<any>(`${this.apiUrl}/anomalies/${namespace}`);
+}
+
+getAllAnomalies(): Observable<{ success: boolean; anomalies: CostAnomaly[]; totalCount: number; criticalCount: number }> {
+  return this.http.get<any>(`${this.apiUrl}/anomalies`);
+}
+
+simulateAnomaly(namespace: string, type: string = 'SPIKE'): Observable<{ success: boolean; anomaly: CostAnomaly }> {
+  return this.http.post<any>(`${this.apiUrl}/anomalies/simulate?namespace=${namespace}&type=${type}`, {});
+}
+
+// Cost Intelligence Dashboard
+getCostIntelligence(namespace: string): Observable<{ success: boolean; intelligence: CostIntelligenceData }> {
+  return this.http.get<any>(`${this.apiUrl}/intelligence/${namespace}`);
 } 
+
+}

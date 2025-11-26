@@ -5,6 +5,7 @@ import { ResourceDashboardComponent } from './components/resource-dashboard/reso
 import { StaticPageComponent } from './components/static-page/static-page.component';
 import { RemediationComponent } from './components/remediation/remediation.component';
 import { CostOptimizationComponent } from './components/cost-optimization/cost-optimization.component';
+import { CostIntelligenceComponent } from './components/cost-intelligence/cost-intelligence.component';
 
 export const routes: Routes = [
   {
@@ -39,6 +40,11 @@ export const routes: Routes = [
   {
     path: 'cost-optimization',
     component: CostOptimizationComponent,  // ← Use static import
+    canActivate: [authGuard]
+  },
+  {
+    path: 'cost-intelligence',
+    component: CostIntelligenceComponent,
     canActivate: [authGuard]
   },
   { 
