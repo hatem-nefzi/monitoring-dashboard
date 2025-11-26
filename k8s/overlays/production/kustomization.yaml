@@ -7,13 +7,30 @@ resources:
 - ../../base
 - production-ingress.yaml
 
-
-
+patches:
+  - target:
+      kind: Deployment
+      name: monitoring-frontend
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts/-
+        value:
+          name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: nginx.conf
+      - op: add
+        path: /spec/template/spec/volumes/-
+        value:
+          name: nginx-config
+          configMap:
+            name: monitoring-frontend-config
+            items:
+            - key: nginx.conf
+              path: nginx.conf
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml
 
 images:
 - name: monitoring-frontend
   newName: registry.proxiad-axe-seine.com/proxiad-academie/ops-dashboard-ui
   newTag: 935d4b9b
-patches:
-- path: configmap-patch.yaml
-- path: deployment-patch.yaml

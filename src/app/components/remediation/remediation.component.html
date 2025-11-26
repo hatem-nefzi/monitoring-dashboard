@@ -4,6 +4,7 @@
     <div class="header-left">
       <h1>🧠 Auto-Remediation Engine</h1>
       <p class="subtitle">Automated issue detection and resolution</p>
+      <span *ngIf="policy.dryRunEnabled" class="dry-run-badge">🔄 DRY RUN MODE - No pods will be deleted</span>
     </div>
     <div class="header-right">
       <button 
@@ -95,6 +96,17 @@
 
       <div class="policy-item">
         <label class="toggle-switch">
+          <input type="checkbox" [(ngModel)]="policy.dryRunEnabled" (change)="toggleDryRun()">
+          <span class="slider"></span>
+        </label>
+        <div class="policy-info">
+          <div class="policy-title">🔄 Dry-Run Mode</div>
+          <div class="policy-desc">Test rules without actually deleting pods</div>
+        </div>
+      </div>
+
+      <div class="policy-item">
+        <label class="toggle-switch">
           <input type="checkbox" [(ngModel)]="policy.autoRestartCrashingPods">
           <span class="slider"></span>
         </label>
@@ -121,6 +133,14 @@
           <input type="number" [(ngModel)]="policy.maxRestartAttempts" min="1" max="10">
         </div>
         <div class="policy-desc">Prevent infinite restart loops</div>
+      </div>
+
+      <div class="policy-item">
+        <div class="input-group">
+          <label>CPU Threshold (%)</label>
+          <input type="number" [(ngModel)]="policy.cpuThresholdPercent" min="1" max="100">
+        </div>
+        <div class="policy-desc">Trigger scaling at this CPU usage</div>
       </div>
     </div>
   </div>
@@ -184,11 +204,12 @@
             <th>Issue</th>
             <th>Action</th>
             <th>Status</th>
+            <th>Mode</th>
             <th>Details</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let action of filteredActions" (click)="viewDetails(action)" class="table-row">
+          <tr *ngFor="let action of filteredActions" (click)="viewDetails(action)" class="table-row" [class.dry-run-row]="isDryRun(action)">
             <td class="time-cell">{{ formatTime(action.timestamp) }}</td>
             <td class="pod-cell">
               <div class="pod-name">{{ action.podName }}</div>
@@ -203,6 +224,11 @@
             <td>
               <span class="badge" [ngClass]="getStatusClass(action.status)">
                 {{ action.status }}
+              </span>
+            </td>
+            <td>
+              <span class="mode-badge" [class.dry-run]="isDryRun(action)">
+                {{ getModeIndicator(action) }}
               </span>
             </td>
             <td>
@@ -247,6 +273,12 @@
           <strong>Status:</strong>
           <span class="badge" [ngClass]="getStatusClass(selectedAction.status)">
             {{ selectedAction.status }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <strong>Mode:</strong>
+          <span class="mode-badge" [class.dry-run]="isDryRun(selectedAction)">
+            {{ getModeIndicator(selectedAction) }}
           </span>
         </div>
         <div class="detail-row">

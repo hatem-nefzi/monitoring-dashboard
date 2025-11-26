@@ -7,7 +7,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-remediation',
   standalone: true,
-  imports: [CommonModule, FormsModule], // ← ADD THESE IMPORTS!
+  imports: [CommonModule, FormsModule],
   templateUrl: './remediation.component.html',
   styleUrls: ['./remediation.component.scss']
 })
@@ -28,7 +28,8 @@ export class RemediationComponent implements OnInit, OnDestroy {
     autoDeleteFailedPods: false,
     autoScaleOnHighCPU: false,
     cpuThresholdPercent: 80.0,
-    notifyOnAction: true
+    notifyOnAction: true,
+    dryRunEnabled: false  // ← NEW: Dry-run mode
   };
   
   // UI State
@@ -78,7 +79,7 @@ export class RemediationComponent implements OnInit, OnDestroy {
     this.loading = true;
 
     // Auto-refresh history every 10 seconds
-    this.historySubscription = this.remediationService.getHistoryLive(100).subscribe({
+    this.historySubscription = this.remediationService.getHistoryLive(1000).subscribe({
       next: (response) => {
         if (response.success) {
           this.actions = response.actions || [];
@@ -147,10 +148,11 @@ export class RemediationComponent implements OnInit, OnDestroy {
    * Trigger manual scan
    */
   triggerScan(): void {
+    const modeText = this.policy.dryRunEnabled ? 'DRY RUN' : 'LIVE';
     this.remediationService.triggerScan().subscribe({
       next: (response) => {
         if (response.success) {
-          alert('✅ Manual scan triggered successfully!');
+          alert(`✅ ${modeText} scan triggered successfully!`);
           setTimeout(() => this.refresh(), 2000);
         }
       },
@@ -175,13 +177,23 @@ export class RemediationComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Toggle dry-run mode
+   */
+  toggleDryRun(): void {
+    const newState = !this.policy.dryRunEnabled;
+    const modeText = newState ? '🔄 DRY RUN' : '🎯 LIVE';
+    alert(`${modeText} mode enabled. Changes will take effect on next scan.`);
+  }
+
+  /**
    * Update policy
    */
   savePolicy(): void {
     this.remediationService.updatePolicy(this.policy).subscribe({
       next: (response) => {
         if (response.success) {
-          alert('✅ Policy updated successfully!');
+          const modeText = this.policy.dryRunEnabled ? '(DRY RUN MODE)' : '';
+          alert(`✅ Policy updated successfully! ${modeText}`);
         }
       },
       error: (err) => alert('❌ Failed to update policy: ' + err.message)
@@ -257,6 +269,8 @@ export class RemediationComponent implements OnInit, OnDestroy {
       case 'CrashLoopBackOff': return 'badge-danger';
       case 'ImagePullBackOff': return 'badge-warning';
       case 'OOMKilled': return 'badge-danger';
+      case 'Evicted': return 'badge-danger';
+      case 'CreateContainerConfigError': return 'badge-warning';
       case 'HighRestartCount': return 'badge-warning';
       case 'Failed': return 'badge-secondary';
       case 'PendingTooLong': return 'badge-info';
@@ -287,5 +301,22 @@ export class RemediationComponent implements OnInit, OnDestroy {
   get successRate(): number {
     if (this.stats.totalActions === 0) return 0;
     return Math.round((this.stats.successfulActions / this.stats.totalActions) * 100);
+  }
+
+  /**
+   * Check if action is dry-run
+   */
+  isDryRun(action: RemediationAction): boolean {
+    return action.metadata?.['mode'] === 'DRY_RUN';
+  }
+
+  /**
+   * Get mode indicator for action
+   */
+  getModeIndicator(action: RemediationAction): string {
+    if (this.isDryRun(action)) {
+      return '🔄 [DRY RUN]';
+    }
+    return '🎯 [LIVE]';
   }
 }

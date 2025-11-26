@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import {  Observable } from 'rxjs';
+import {map} from 'rxjs/operators';
 import { HttpParams } from '@angular/common/http';
 //opentelemetry added import
 import { HttpHeaders } from '@angular/common/http';
@@ -38,8 +39,13 @@ export class KubernetesService {
   }
 
   getNamespaces(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/namespaces`);
-  }
+  return this.http.get<{ success: boolean; namespaces: string[] }>(`${this.apiUrl}/namespaces`)
+    .pipe(
+      // Extract only the namespaces array for easier use in components
+      map(response => response.namespaces)
+    );
+}
+
 
   // Methods for getting logs and details
   getPodLogs(podName: string, namespace: string, containerName?: string, tailLines?: number): Observable<string> {
