@@ -103,10 +103,10 @@
     <div class="stat-card" [ngClass]="getRiskLevelClass(stats.riskLevel)">
       <div class="stat-icon">{{ getTrendIcon(stats.forecastTrend) }}</div>
       <div class="stat-content">
-        <div class="stat-value">{{ formatCurrency(intelligenceData.forecast.predictedMonthlyCost) }}</div>
+        <div class="stat-value">{{ formatCurrency(intelligenceData.forecast.predictedMonthlyCost || 0) }}</div>
         <div class="stat-label">Forecasted Cost</div>
         <div class="stat-detail">
-          {{ formatPercent(intelligenceData.forecast.changePercent) }}
+          {{ formatPercent(intelligenceData.forecast.changePercent || 0) }}
         </div>
       </div>
     </div>
