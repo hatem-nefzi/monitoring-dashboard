@@ -326,15 +326,15 @@
                 <div class="anomaly-stats">
                   <div class="stat">
                     <label>Current Value:</label>
-                    <value>{{ formatCurrency(anomaly.currentValue) }}</value>
+                    <span class="value">{{ formatCurrency(anomaly.currentValue) }}</span>
                   </div>
                   <div class="stat">
                     <label>Expected Value:</label>
-                    <value>{{ formatCurrency(anomaly.expectedValue) }}</value>
+                    <span class="value">{{ formatCurrency(anomaly.expectedValue) }}</span>
                   </div>
                   <div class="stat">
                     <label>Deviation:</label>
-                    <value class="deviation">{{ formatPercent(anomaly.deviation * 100) }}</value>
+                    <span class="value deviation">{{ formatPercent(anomaly.deviation * 100) }}</span>
                   </div>
                 </div>
 
@@ -377,17 +377,17 @@
               <div class="savings-metrics">
                 <div class="metric-card">
                   <label>Baseline Cost</label>
-                  <value>{{ formatCurrency(intelligenceData.savings.baselineCost || 0) }}</value>
+                  <span class="value">{{ formatCurrency(intelligenceData.savings.baselineCost || 0) }}</span>
                   <small>{{ formatDate(intelligenceData.savings.baselineTimestamp || '') }}</small>
                 </div>
                 <div class="metric-card">
                   <label>Current Cost</label>
-                  <value>{{ formatCurrency(intelligenceData.savings.currentCost || 0) }}</value>
+                  <span class="value">{{ formatCurrency(intelligenceData.savings.currentCost || 0) }}</span>
                   <small>{{ formatDate(intelligenceData.savings.currentTimestamp || '') }}</small>
                 </div>
                 <div class="metric-card success">
                   <label>Cost Reduction</label>
-                  <value>{{ formatPercent(intelligenceData.savings.percentReduction || 0) }}</value>
+                  <span class="value">{{ formatPercent(intelligenceData.savings.percentReduction || 0) }}</span>
                   <small>{{ intelligenceData.savings.daysTracked }} days tracked</small>
                 </div>
               </div>

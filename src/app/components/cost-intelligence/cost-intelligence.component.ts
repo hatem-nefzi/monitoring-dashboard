@@ -28,7 +28,7 @@ interface AlertMessage {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './cost-intelligence.component.html',
-  styleUrls: ['./cost-intelligence.component.css']
+  styleUrls: ['./cost-intelligence.component.scss']
 })
 export class CostIntelligenceComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
