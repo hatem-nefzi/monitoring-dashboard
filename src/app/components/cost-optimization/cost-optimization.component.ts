@@ -251,6 +251,17 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
       this.efficiencyChart = null;
     }
 
+    // Sort and prepare data
+    const sortedHistory = [...this.costHistory].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    // Intelligently sample data for better performance with many points
+    const sampledData = this.sampleDataPoints(sortedHistory, 50);
+    
+    // Format labels based on data density
+    const labels = sampledData.map(s => this.formatChartLabel(s.timestamp, sortedHistory.length));
+
     // Cost Timeline Chart
     if (this.costChartCanvas && this.costChartCanvas.nativeElement) {
       const ctx = this.costChartCanvas.nativeElement.getContext('2d');
@@ -258,41 +269,86 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
         this.costChart = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: this.costHistory.map(s => new Date(s.timestamp).toLocaleDateString()),
+            labels,
             datasets: [{
-              label: 'Monthly Cost ($)',
-              data: this.costHistory.map(s => s.totalMonthlyCost),
+              label: 'Monthly Cost',
+              data: sampledData.map(s => s.totalMonthlyCost),
               borderColor: '#667eea',
               backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              borderWidth: 2,
               tension: 0.4,
               fill: true,
-              pointRadius: 4,
-              pointHoverRadius: 6
+              pointRadius: sampledData.length > 30 ? 0 : 3,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#667eea',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointHoverBackgroundColor: '#667eea',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 2
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
             plugins: {
               legend: {
-                display: true,
-                position: 'top'
+                display: false
               },
               tooltip: {
+                enabled: true,
                 mode: 'index',
                 intersect: false,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                borderColor: '#667eea',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
                 callbacks: {
-                  label: (context) => {
-                    return `Cost: $${context.parsed.y !== null && context.parsed.y !== undefined ? context.parsed.y.toFixed(2) : 'N/A'}/month`;
+                  title: (items: any) => {
+                    const idx = items[0].dataIndex;
+                    return this.formatDateTime(sampledData[idx].timestamp);
+                  },
+                  label: (context: any) => {
+                    const value = context.parsed.y;
+                    return `Cost: ${value !== null ? value.toFixed(2) : 'N/A'}/month`;
                   }
                 }
               }
             },
             scales: {
+              x: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 0,
+                  autoSkip: true,
+                  maxTicksLimit: 10,
+                  color: '#6b7280',
+                  font: {
+                    size: 11
+                  }
+                }
+              },
               y: {
                 beginAtZero: true,
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.05)'
+                },
                 ticks: {
-                  callback: (value) => '$' + value
+                  color: '#6b7280',
+                  font: {
+                    size: 11
+                  },
+                  callback: (value: any) => ' + Number(value).toFixed(0)'
                 }
               }
             }
@@ -308,48 +364,125 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
         this.efficiencyChart = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: this.costHistory.map(s => new Date(s.timestamp).toLocaleDateString()),
+            labels,
             datasets: [{
-              label: 'Efficiency Score (%)',
-              data: this.costHistory.map(s => s.efficiencyScore),
+              label: 'Efficiency Score',
+              data: sampledData.map(s => s.efficiencyScore),
               borderColor: '#10b981',
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2,
               tension: 0.4,
               fill: true,
-              pointRadius: 4,
-              pointHoverRadius: 6
+              pointRadius: sampledData.length > 30 ? 0 : 3,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#10b981',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointHoverBackgroundColor: '#10b981',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 2
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
             plugins: {
               legend: {
-                display: true,
-                position: 'top'
+                display: false
               },
               tooltip: {
+                enabled: true,
                 mode: 'index',
                 intersect: false,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                borderColor: '#10b981',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
                 callbacks: {
-                  label: (context) => {
-                    return `Efficiency: ${context.parsed.y !== null && context.parsed.y !== undefined ? context.parsed.y.toFixed(1) : 'N/A'}%`;
+                  title: (items: any) => {
+                    const idx = items[0].dataIndex;
+                    return this.formatDateTime(sampledData[idx].timestamp);
+                  },
+                  label: (context: any) => {
+                    const value = context.parsed.y;
+                    return `Efficiency: ${value !== null ? value.toFixed(1) : 'N/A'}%`;
                   }
                 }
               }
             },
             scales: {
+              x: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 0,
+                  autoSkip: true,
+                  maxTicksLimit: 10,
+                  color: '#6b7280',
+                  font: {
+                    size: 11
+                  }
+                }
+              },
               y: {
                 beginAtZero: true,
                 max: 100,
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.05)'
+                },
                 ticks: {
-                  callback: (value) => value + '%'
+                  color: '#6b7280',
+                  font: {
+                    size: 11
+                  },
+                  stepSize: 20,
+                  callback: (value: any) => value + '%'
                 }
               }
             }
           }
         });
       }
+    }
+  }
+
+  private sampleDataPoints(data: CostSnapshot[], maxPoints: number): CostSnapshot[] {
+    if (data.length <= maxPoints) {
+      return data;
+    }
+
+    // Always keep first and last points
+    const sampled: CostSnapshot[] = [data[0]];
+    const step = (data.length - 1) / (maxPoints - 1);
+    
+    for (let i = 1; i < maxPoints - 1; i++) {
+      const index = Math.round(i * step);
+      sampled.push(data[index]);
+    }
+    
+    sampled.push(data[data.length - 1]);
+    return sampled;
+  }
+
+  private formatChartLabel(timestamp: string, totalPoints: number): string {
+    const date = new Date(timestamp);
+    
+    // For many points, use more compact format
+    if (totalPoints > 30) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else if (totalPoints > 14) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
     }
   }
 
