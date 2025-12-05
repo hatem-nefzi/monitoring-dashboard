@@ -257,7 +257,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
     );
 
     // Intelligently sample data for better performance with many points
-    const sampledData = this.sampleDataPoints(sortedHistory, 50);
+    const sampledData = this.sampleDataPoints(sortedHistory, 25);
     
     // Format labels based on data density
     const labels = sampledData.map(s => this.formatChartLabel(s.timestamp, sortedHistory.length));
