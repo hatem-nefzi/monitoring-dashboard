@@ -348,7 +348,7 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
                   font: {
                     size: 11
                   },
-                  callback: (value: any) => ' + Number(value).toFixed(0)'
+                  callback: (value: any) => '$' + Number(value).toFixed(0)
                 }
               }
             }
