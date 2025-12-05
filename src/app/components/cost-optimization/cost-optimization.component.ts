@@ -278,8 +278,8 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
               borderWidth: 2,
               tension: 0.4,
               fill: true,
-              pointRadius: sampledData.length > 30 ? 0 : 3,
-              pointHoverRadius: 6,
+              pointRadius: 0,  // Hide points for cleaner look
+              pointHoverRadius: 5,
               pointBackgroundColor: '#667eea',
               pointBorderColor: '#fff',
               pointBorderWidth: 2,
