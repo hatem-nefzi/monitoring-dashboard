@@ -176,6 +176,12 @@ export class CostService {
   getCostHistory(namespace: string, days: number = 30): Observable<{ success: boolean; history: CostSnapshot[] }> {
     return this.http.get<any>(`${this.apiUrl}/history/${namespace}?days=${days}`);
   }
+  //  new paginated method
+  getCostHistoryPaginated(namespace: string, page: number = 0, size: number = 20, days: number = 30): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/history/${namespace}/paginated`, {
+    params: { page: page.toString(), size: size.toString(), days: days.toString() }
+  });
+}
 
   getSavings(namespace: string): Observable<{ success: boolean; savings: SavingsData }> {
     return this.http.get<any>(`${this.apiUrl}/savings/${namespace}`);
@@ -200,6 +206,7 @@ export class CostService {
   getClusterCostHistory(days: number = 30): Observable<{ success: boolean; history: any }> {
     return this.http.get<any>(`${this.apiUrl}/history/cluster?days=${days}`);
   }
+
 
   // ===== NEW: Cache Management Endpoints =====
   
