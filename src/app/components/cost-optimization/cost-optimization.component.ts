@@ -19,6 +19,8 @@ Chart.register(...registerables);
 export class CostOptimizationComponent implements OnInit, AfterViewInit {
   @ViewChild('costChart') costChartCanvas?: ElementRef<HTMLCanvasElement>;
   @ViewChild('efficiencyChart') efficiencyChartCanvas?: ElementRef<HTMLCanvasElement>;
+  Math = Math;
+  
 
   // State
   loading = true;
@@ -33,6 +35,14 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
   
   // Timeline data
   costHistory: CostSnapshot[] = [];
+  // for pagination
+  currentPage = 0;
+  pageSize = 20;
+  totalPages = 0;
+  totalElements = 0;
+  hasNext = false;
+  hasPrevious = false;
+  loadingHistory = false;
   savingsData: SavingsData | null = null;
   timelineDays = 30;
   costChart: Chart | null = null;
@@ -177,43 +187,57 @@ export class CostOptimizationComponent implements OnInit, AfterViewInit {
   }
 
   loadTimelineData(namespace: string): void {
-    // Load cost history
-    this.costService.getCostHistory(namespace, this.timelineDays).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.costHistory = response.history || [];
-          
-          // Load savings data
-          this.costService.getSavings(namespace).subscribe({
-            next: (savingsResponse) => {
-              if (savingsResponse.success) {
-                this.savingsData = savingsResponse.savings;
-              }
-              
-              // Load current analysis
-              this.loadNamespaceAnalysis(namespace,false);
-              
-              // Create charts after a small delay to ensure DOM is ready
-              setTimeout(() => {
-                this.createCharts();
-                this.loading = false;
-              }, 200);
-            },
-            error: (err) => {
-              console.error('Failed to load savings:', err);
-              this.loading = false;
+  this.loadingHistory = true;
+  
+  // Load paginated cost history
+  this.costService.getCostHistoryPaginated(namespace, this.currentPage, this.pageSize, this.timelineDays).subscribe({
+    next: (response) => {
+      if (response.success) {
+        this.costHistory = response.data || [];
+        
+        // Update pagination state
+        const pagination = response.pagination;
+        this.currentPage = pagination.currentPage;
+        this.totalPages = pagination.totalPages;
+        this.totalElements = pagination.totalElements;
+        this.hasNext = pagination.hasNext;
+        this.hasPrevious = pagination.hasPrevious;
+        
+        // Load savings data
+        this.costService.getSavings(namespace).subscribe({
+          next: (savingsResponse) => {
+            if (savingsResponse.success) {
+              this.savingsData = savingsResponse.savings;
             }
-          });
-        } else {
-          this.loading = false;
-        }
-      },
-      error: (err) => {
-        this.error = 'Failed to load timeline data: ' + err.message;
+            
+            // Load current analysis
+            this.loadNamespaceAnalysis(namespace, false);
+            
+            // Create charts
+            setTimeout(() => {
+              this.createCharts();
+              this.loading = false;
+              this.loadingHistory = false;
+            }, 200);
+          },
+          error: (err) => {
+            console.error('Failed to load savings:', err);
+            this.loading = false;
+            this.loadingHistory = false;
+          }
+        });
+      } else {
         this.loading = false;
+        this.loadingHistory = false;
       }
-    });
-  }
+    },
+    error: (err) => {
+      this.error = 'Failed to load timeline data: ' + err.message;
+      this.loading = false;
+      this.loadingHistory = false;
+    }
+  });
+}
 
   createSnapshot(): void {
     if (!this.selectedNamespace) return;
@@ -841,4 +865,48 @@ spec:
     
     return total;
   }
+  // for pagination
+  nextPage(): void {
+  if (this.hasNext && !this.loadingHistory) {
+    this.currentPage++;
+    this.loadTimelineData(this.selectedNamespace!);
+  }
+}
+
+previousPage(): void {
+  if (this.hasPrevious && !this.loadingHistory) {
+    this.currentPage--;
+    this.loadTimelineData(this.selectedNamespace!);
+  }
+}
+
+goToPage(page: number): void {
+  if (page >= 0 && page < this.totalPages && !this.loadingHistory) {
+    this.currentPage = page;
+    this.loadTimelineData(this.selectedNamespace!);
+  }
+}
+
+getPageNumbers(): number[] {
+  const maxVisible = 5;
+  const pages: number[] = [];
+  
+  let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+  let end = Math.min(this.totalPages - 1, start + maxVisible - 1);
+  
+  if (end - start < maxVisible - 1) {
+    start = Math.max(0, end - maxVisible + 1);
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  
+  return pages;
+}
+
+onPageSizeChange(): void {
+  this.currentPage = 0;
+  this.loadTimelineData(this.selectedNamespace!);
+}
 }
